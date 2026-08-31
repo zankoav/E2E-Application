@@ -1,11 +1,11 @@
-global inherited sharing class DefinitionResolver {
+public inherited sharing class DefinitionResolver {
     private DefinitionValidator validator;
 
-    global DefinitionResolver() {
+    public DefinitionResolver() {
         this.validator = new DefinitionValidator();
     }
 
-    global ProcessDefinition resolveActive(String processKey) {
+    public ProcessDefinition resolveActive(String processKey) {
         if (String.isBlank(processKey)) {
             throw new FrameworkException('Process key is required.');
         }

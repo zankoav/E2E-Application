@@ -1,2 +1,2 @@
-global class FrameworkException extends Exception {
+public class FrameworkException extends Exception {
 }

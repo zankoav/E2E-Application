@@ -1,13 +1,13 @@
-@RestResource(urlMapping='/e2e/applications/init')
-global with sharing class ApplicationInitRestController {
+@RestResource(urlMapping='/e2e/applications/submit-step')
+global with sharing class ApplicationSubmitStepRestController {
     @HttpPost
     global static void post() {
         try {
             String requestBody = RestContext.request.requestBody == null
                 ? null
                 : RestContext.request.requestBody.toString();
-            InitApplicationCommand command = InitApplicationCommand.fromJson(requestBody);
-            writeResponse(200, new InitApplicationHandler().execute(command));
+            SubmitStepCommand command = SubmitStepCommand.fromJson(requestBody);
+            writeResponse(200, new SubmitStepHandler().execute(command));
         } catch (Exception ex) {
             writeResponse(400, CommandResult.fail(ex.getMessage()));
         }

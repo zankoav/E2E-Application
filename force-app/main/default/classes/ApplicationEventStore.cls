@@ -1,5 +1,5 @@
-global inherited sharing class ApplicationEventStore {
-    global void createEvent(Id applicationId, String eventType, String message, Object details) {
+public inherited sharing class ApplicationEventStore {
+    public void createEvent(Id applicationId, String eventType, String message, Object details) {
         if (applicationId == null || String.isBlank(eventType)) {
             return;
         }

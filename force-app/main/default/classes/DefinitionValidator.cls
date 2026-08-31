@@ -1,5 +1,5 @@
-global class DefinitionValidator {
-    global void validate(ProcessDefinition definition) {
+public class DefinitionValidator {
+    public void validate(ProcessDefinition definition) {
         if (definition == null) {
             throw new FrameworkException('Process definition is required.');
         }

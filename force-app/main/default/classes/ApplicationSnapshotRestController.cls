@@ -1,13 +1,13 @@
-@RestResource(urlMapping='/e2e/applications/init')
-global with sharing class ApplicationInitRestController {
+@RestResource(urlMapping='/e2e/applications/snapshot')
+global with sharing class ApplicationSnapshotRestController {
     @HttpPost
     global static void post() {
         try {
             String requestBody = RestContext.request.requestBody == null
                 ? null
                 : RestContext.request.requestBody.toString();
-            InitApplicationCommand command = InitApplicationCommand.fromJson(requestBody);
-            writeResponse(200, new InitApplicationHandler().execute(command));
+            GetSnapshotCommand command = GetSnapshotCommand.fromJson(requestBody);
+            writeResponse(200, new GetSnapshotHandler().execute(command));
         } catch (Exception ex) {
             writeResponse(400, CommandResult.fail(ex.getMessage()));
         }

@@ -1,13 +1,13 @@
-global class InitApplicationCommand {
-    global String consumerKey;
-    global String processKey;
-    global String scenarioKey;
-    global String externalReference;
+public class InitApplicationCommand {
+    public String consumerKey;
+    public String processKey;
+    public String scenarioKey;
+    public String externalReference;
 
-    global InitApplicationCommand() {
+    public InitApplicationCommand() {
     }
 
-    global static InitApplicationCommand fromJson(String requestBody) {
+    public static InitApplicationCommand fromJson(String requestBody) {
         return (InitApplicationCommand) JSON.deserialize(requestBody, InitApplicationCommand.class);
     }
 }

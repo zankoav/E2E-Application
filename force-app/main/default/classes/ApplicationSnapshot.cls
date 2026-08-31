@@ -1,28 +1,28 @@
-global class ApplicationSnapshot {
-    global ApplicationInfo application;
-    global List<StepInfo> steps = new List<StepInfo>();
-    global Map<String, Object> data = new Map<String, Object>();
-    global List<Object> jobs = new List<Object>();
-    global List<Object> stopProcesses = new List<Object>();
-    global List<String> availableActions = new List<String>();
+public class ApplicationSnapshot {
+    public ApplicationInfo application;
+    public List<StepInfo> steps = new List<StepInfo>();
+    public Map<String, Object> data = new Map<String, Object>();
+    public List<Object> jobs = new List<Object>();
+    public List<Object> stopProcesses = new List<Object>();
+    public List<String> availableActions = new List<String>();
 
-    global class ApplicationInfo {
-        global String id;
-        global String name;
-        global String processKey;
-        global String scenarioKey;
-        global String status;
-        global String conversionStatus;
-        global String currentStep;
-        global String consumerKey;
-        global String externalReference;
-        global String definitionVersion;
+    public class ApplicationInfo {
+        public String id;
+        public String name;
+        public String processKey;
+        public String scenarioKey;
+        public String status;
+        public String conversionStatus;
+        public String currentStep;
+        public String consumerKey;
+        public String externalReference;
+        public String definitionVersion;
     }
 
-    global class StepInfo {
-        global String key;
-        global String label;
-        global String status;
-        global Boolean available;
+    public class StepInfo {
+        public String key;
+        public String label;
+        public String status;
+        public Boolean available;
     }
 }

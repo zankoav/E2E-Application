@@ -25,4 +25,30 @@ private class ProcessDefinitionTest {
             Assert.isTrue(ex.getMessage().contains('missing step'));
         }
     }
+
+    @IsTest
+    static void rejectsDefinitionWithoutVersion() {
+        String definitionJson = '{"process":{"key":"fuelCardApplication"},"scenarios":{"newCustomer":{"initialStep":"contactDetails","steps":["contactDetails"]}},"steps":{"contactDetails":{"label":"Contact Details"}}}';
+
+        try {
+            ProcessDefinition definition = ProcessDefinition.parse(definitionJson);
+            new DefinitionValidator().validate(definition);
+            Assert.fail('Expected definition validation to fail.');
+        } catch (FrameworkException ex) {
+            Assert.isTrue(ex.getMessage().contains('version'));
+        }
+    }
+
+    @IsTest
+    static void rejectsDefinitionWithoutScenarios() {
+        String definitionJson = '{"process":{"key":"fuelCardApplication","version":"1.0.0"},"steps":{"contactDetails":{"label":"Contact Details"}}}';
+
+        try {
+            ProcessDefinition definition = ProcessDefinition.parse(definitionJson);
+            new DefinitionValidator().validate(definition);
+            Assert.fail('Expected definition validation to fail.');
+        } catch (FrameworkException ex) {
+            Assert.isTrue(ex.getMessage().contains('scenario'));
+        }
+    }
 }

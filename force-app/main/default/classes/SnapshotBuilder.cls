@@ -1,5 +1,9 @@
-global inherited sharing class SnapshotBuilder {
-    global ApplicationSnapshot build(Application__c application, ProcessDefinition definition) {
+public inherited sharing class SnapshotBuilder {
+    public ApplicationSnapshot build(Application__c application, ProcessDefinition definition) {
+        return build(application, definition, new List<Application_Data__c>());
+    }
+
+    public ApplicationSnapshot build(Application__c application, ProcessDefinition definition, List<Application_Data__c> dataRecords) {
         if (application == null) {
             throw new FrameworkException('Application is required to build Snapshot.');
         }
@@ -10,6 +14,7 @@ global inherited sharing class SnapshotBuilder {
         ApplicationSnapshot snapshot = new ApplicationSnapshot();
         snapshot.application = buildApplicationInfo(application);
         snapshot.steps = buildSteps(application, definition);
+        snapshot.data = buildData(dataRecords);
         snapshot.availableActions.add('GetSnapshot');
         snapshot.availableActions.add('SubmitStep');
         return snapshot;
@@ -46,6 +51,35 @@ global inherited sharing class SnapshotBuilder {
             steps.add(stepInfo);
         }
         return steps;
+    }
+
+    private Map<String, Object> buildData(List<Application_Data__c> dataRecords) {
+        Map<String, Object> data = new Map<String, Object>();
+        if (dataRecords == null) {
+            return data;
+        }
+
+        for (Application_Data__c dataRecord : dataRecords) {
+            data.put(dataRecord.Key__c, getDataValue(dataRecord));
+        }
+        return data;
+    }
+
+    private Object getDataValue(Application_Data__c dataRecord) {
+        if (dataRecord.Type__c == 'Json') {
+            return String.isBlank(dataRecord.Value_JSON__c)
+                ? null
+                : JSON.deserializeUntyped(dataRecord.Value_JSON__c);
+        }
+        if (dataRecord.Type__c == 'Boolean') {
+            return dataRecord.Value__c == 'true';
+        }
+        if (dataRecord.Type__c == 'Number') {
+            return String.isBlank(dataRecord.Value__c)
+                ? null
+                : Decimal.valueOf(dataRecord.Value__c);
+        }
+        return dataRecord.Value__c;
     }
 
     private String getStepLabel(ProcessDefinition definition, String stepKey) {
