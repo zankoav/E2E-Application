@@ -1,0 +1,183 @@
+# Runtime Flow
+
+## Purpose
+
+This document describes how the closed core executes E2E Application commands.
+
+REST endpoints are only controllers. Runtime flow describes the application-level execution inside the package.
+
+## Main Runtime Layers
+
+| Layer | Responsibility |
+| --- | --- |
+| Controller | Parse API request and return API response. |
+| Command Handler | Execute one application command. |
+| Definition Resolver | Load process, scenario, step, rule, job, mapping, and consumer definitions. |
+| State Store | Load and persist Application State. |
+| Rule Engine | Evaluate explicit process decisions. |
+| Job Engine | Create, run, observe, and recover Job instances. |
+| Conversion Engine | Convert completed Applications into CRM records. |
+| Snapshot Builder | Build API Snapshot from State and selected Definitions. |
+
+## InitApplication Flow
+
+```text
+API request
+  -> Controller
+  -> InitApplication Command Handler
+  -> validate Consumer
+  -> resolve Process Definition
+  -> resolve Scenario
+  -> create or resume Application__c
+  -> initialize State
+  -> build Snapshot
+  -> API response
+```
+
+Important rules:
+
+- `InitApplication` should be idempotent where possible.
+- Consumer access must be checked before creating or resuming Application.
+- Snapshot should use API contract keys, not Salesforce field API names.
+
+## GetSnapshot Flow
+
+```text
+API request
+  -> Controller
+  -> GetSnapshot Command Handler
+  -> load Application State
+  -> resolve Definitions
+  -> evaluate Step Availability Rules
+  -> include active Jobs
+  -> include active Stop Processes
+  -> build Snapshot
+  -> API response
+```
+
+Important rules:
+
+- `GetSnapshot` should mainly read State.
+- Any recovery mutation must be explicitly documented.
+- Consumer should receive process meaning, not internal storage shape.
+
+## SubmitStep Flow
+
+```text
+API request
+  -> Controller
+  -> SubmitStep Command Handler
+  -> load Application State
+  -> resolve current Step Definition
+  -> evaluate Validation Rules
+  -> persist accepted State changes
+  -> evaluate Job Trigger Rules
+  -> create/update Job instances
+  -> evaluate Step Transition Rules
+  -> evaluate Finish Rule if target is final state
+  -> build Snapshot
+  -> API response
+```
+
+`SubmitStep` does not always move the Application to the next Step.
+
+Possible outcomes:
+
+| Outcome | Meaning |
+| --- | --- |
+| `StateUpdated` | Data was accepted, current step remains active. |
+| `ValidationBlocked` | Submitted data was rejected by Validation Rules. |
+| `WaitingForJobs` | Required Jobs must finish before transition. |
+| `StopProcessBlocked` | Active Stop Process blocks transition. |
+| `TransitionCompleted` | Application moved to another Step. |
+| `ApplicationFinished` | Application entered final immutable State. |
+
+## Step Transition Flow
+
+Step Transition Rules decide whether Application can move from one Step to another.
+
+Inputs:
+
+- current State
+- submitted data result
+- active Stop Processes
+- required Job statuses
+- scenario step order
+- target Step availability
+
+Strict Stop Process policy:
+
+```text
+active Stop Processes block transition by default
+only explicitly allowed stop process codes can pass
+```
+
+## Job Flow
+
+```text
+Job Trigger Rule matched
+  -> Job Engine creates or updates Application_Job__c
+  -> Snapshot exposes runnable or observable Jobs
+  -> RunJob Command Handler validates Job can run
+  -> JobExecutor extension runs
+  -> Job Engine stores result/status
+```
+
+Job execution modes:
+
+| Mode | Purpose |
+| --- | --- |
+| `sync` | Run in the current transaction when safe. |
+| `syncCallout` | Prepare before callout-safe sync execution. |
+| `async` | Run through async Apex. |
+
+Job dependencies define execution order and can block Step Transition Rules.
+
+## Integration Flow
+
+```text
+JobExecutor or Conversion Engine
+  -> IntegrationAdapter
+  -> external callout or Salesforce read
+  -> normalized IntegrationResult
+  -> caller decides next action
+```
+
+Integrations should not perform DML, change Application State, or own process transitions.
+
+## Finish Flow
+
+```text
+SubmitStep
+  -> Step Transition Rules passed
+  -> target is final state
+  -> Finish Rule evaluated
+  -> Application status becomes Completed
+  -> Completed_At__c is set
+  -> ApplicationFinished event is created
+  -> Snapshot returned
+```
+
+After finish, Application State should be treated as immutable except for conversion, audit, and support operations.
+
+## Conversion Flow
+
+```text
+Completed Applications
+  -> ConvertApplications Command Handler
+  -> resolve Mapping Definitions
+  -> build target SObjects
+  -> execute bulk DML
+  -> create Application_Record_Link__c records
+  -> update Conversion Status
+  -> create Conversion events
+```
+
+Conversion is usually system/admin driven and should support bulk processing.
+
+## Guiding Principle
+
+Commands change or read Application State through clear runtime layers.
+
+Controllers should stay thin. Business decisions should be explicit Rules. Custom behavior should enter through Extensions.
+

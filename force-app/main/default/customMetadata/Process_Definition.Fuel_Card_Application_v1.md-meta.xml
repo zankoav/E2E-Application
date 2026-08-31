@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomMetadata xmlns="http://soap.sforce.com/2006/04/metadata"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+    <label>Fuel Card Application v1</label>
+    <protected>false</protected>
+    <values>
+        <field>Active__c</field>
+        <value xsi:type="xsd:boolean">true</value>
+    </values>
+    <values>
+        <field>Description__c</field>
+        <value xsi:type="xsd:string">Minimal sample process definition for the first InitApplication skeleton.</value>
+    </values>
+    <values>
+        <field>Definition_JSON__c</field>
+        <value xsi:type="xsd:string">{"process":{"key":"fuelCardApplication","label":"Fuel Card Application","version":"1.0.0"},"scenarios":{"newCustomer":{"label":"New Customer","initialStep":"contactDetails","steps":["contactDetails","companyDetails","finish"]}},"steps":{"contactDetails":{"label":"Contact Details","type":"standard","required":true},"companyDetails":{"label":"Company Details","type":"standard","required":true},"finish":{"label":"Finish","type":"finish","required":true}},"rules":{},"jobs":{},"integrations":{},"mappings":{},"stopProcesses":{}}</value>
+    </values>
+    <values>
+        <field>Process_Key__c</field>
+        <value xsi:type="xsd:string">fuelCardApplication</value>
+    </values>
+    <values>
+        <field>Version__c</field>
+        <value xsi:type="xsd:string">1.0.0</value>
+    </values>
+</CustomMetadata>

@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Conversion_Status__c</fullName>
+    <label>Conversion Status</label>
+    <required>true</required>
+    <trackHistory>true</trackHistory>
+    <type>Picklist</type>
+    <valueSet>
+        <restricted>true</restricted>
+        <valueSetDefinition>
+            <sorted>false</sorted>
+            <value>
+                <fullName>NotReady</fullName>
+                <default>true</default>
+                <label>Not Ready</label>
+            </value>
+            <value>
+                <fullName>Ready</fullName>
+                <default>false</default>
+                <label>Ready</label>
+            </value>
+            <value>
+                <fullName>Converting</fullName>
+                <default>false</default>
+                <label>Converting</label>
+            </value>
+            <value>
+                <fullName>Converted</fullName>
+                <default>false</default>
+                <label>Converted</label>
+            </value>
+            <value>
+                <fullName>Failed</fullName>
+                <default>false</default>
+                <label>Failed</label>
+            </value>
+        </valueSetDefinition>
+    </valueSet>
+</CustomField>
