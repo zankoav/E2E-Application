@@ -14,6 +14,7 @@ REST endpoints are transport. Commands are the application-level meaning.
 | `GetSnapshot` | Return the current Snapshot for an existing Application. |
 | `SubmitStep` | Submit data for the current Step and evaluate process movement. |
 | `RunJob` | Run a specific Job instance when the Snapshot allows it. |
+| `RestartJob` | Mark a restartable Job for another run. |
 | `ContinueApplication` | Retry Step Transition after blocking Jobs or Stop Processes changed. |
 | `GetJobStatus` | Read current Job status. |
 | `ConvertApplications` | Convert completed Applications into CRM records, usually in bulk. |
@@ -85,6 +86,46 @@ In the first skeleton, `RunJob` supports synchronous default execution. Async an
 
 Jobs can run sync, async, or with callout-safe preparation.
 
+Initial lifecycle by execution mode:
+
+| Mode | Lifecycle |
+| --- | --- |
+| `sync` | `Queued` / `Restart` / restartable `Failed` -> `Processing` -> `Completed` / `Failed` |
+| `syncCallout` | first call: `Queued` / `Restart` / restartable `Failed` -> `Preparing`; next call: `Preparing` -> `Completed` / `Failed` |
+| `async` | `Queued` / `Restart` / restartable `Failed` -> `Processing`; Queueable finishes as `Completed` / `Failed` |
+
+`syncCallout` uses a separate `Preparing` step so no status DML is required immediately before a callout-capable executor runs.
+
+Snapshots expose allowed actions per Job so Consumers do not need to infer lifecycle rules from raw status values.
+
+Initial Job action matrix:
+
+| Job state | Actions |
+| --- | --- |
+| `Queued` | `RunJob` |
+| `Restart` | `RunJob` |
+| restartable `Failed` | `RunJob`, `RestartJob` |
+| `Preparing` with `syncCallout` | `RunJob`, `RestartJob` when restartable |
+| restartable `Processing` | `RestartJob` |
+| `Completed` | none |
+
+## RestartJob
+
+Marks a Job instance as `Restart`.
+
+Responsibilities:
+
+- validate Consumer access
+- validate Job exists on the Application
+- allow restart only for restartable Jobs
+- allow restart from `Failed`, `Processing`, or `Preparing`
+- clear previous async job id and error details
+- return updated Snapshot
+
+`RestartJob` does not execute the Job.
+
+After restart, the Consumer calls `RunJob`. The next runtime behavior is still controlled by the Job's `executionMode`.
+
 ## ContinueApplication
 
 Retries process movement from the current Step without submitting data again.
@@ -108,8 +149,11 @@ Returns current status of a Job instance.
 Responsibilities:
 
 - load Job by key
-- return normalized Job status
-- apply documented recovery rules when needed
+- return normalized Job status with per-job available actions
+
+`GetJobStatus` returns `CommandResult.job`, not a full Snapshot.
+
+It should not mutate Application State.
 
 ## ConvertApplications
 

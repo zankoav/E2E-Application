@@ -76,6 +76,29 @@ private class GetSnapshotHandlerTest {
     }
 
     @IsTest
+    static void returnsAvailableActionsForEachJob() {
+        Application__c application = createApplication();
+        insert new List<Application_Job__c>{
+            createJob(application.Id, 'queuedSync', FrameworkConstants.JOB_STATUS_QUEUED, FrameworkConstants.JOB_EXECUTION_MODE_SYNC, true),
+            createJob(application.Id, 'preparingCallout', FrameworkConstants.JOB_STATUS_PREPARING, FrameworkConstants.JOB_EXECUTION_MODE_SYNC_CALLOUT, true),
+            createJob(application.Id, 'processingAsync', FrameworkConstants.JOB_STATUS_PROCESSING, FrameworkConstants.JOB_EXECUTION_MODE_ASYNC, true),
+            createJob(application.Id, 'failedRestartable', FrameworkConstants.JOB_STATUS_FAILED, FrameworkConstants.JOB_EXECUTION_MODE_SYNC, true),
+            createJob(application.Id, 'completedSync', FrameworkConstants.JOB_STATUS_COMPLETED, FrameworkConstants.JOB_EXECUTION_MODE_SYNC, true),
+            createJob(application.Id, 'failedNonRestartable', FrameworkConstants.JOB_STATUS_FAILED, FrameworkConstants.JOB_EXECUTION_MODE_SYNC, false)
+        };
+
+        CommandResult result = new GetSnapshotHandler().execute(createSnapshotCommand(application.Id, 'webPortal'));
+        Map<String, ApplicationSnapshot.JobInfo> jobsByKey = getJobsByKey(result.snapshot.jobs);
+
+        assertActions(jobsByKey.get('contactDetails___queuedSync'), new List<String>{ 'RunJob' });
+        assertActions(jobsByKey.get('contactDetails___preparingCallout'), new List<String>{ 'RunJob', 'RestartJob' });
+        assertActions(jobsByKey.get('contactDetails___processingAsync'), new List<String>{ 'RestartJob' });
+        assertActions(jobsByKey.get('contactDetails___failedRestartable'), new List<String>{ 'RunJob', 'RestartJob' });
+        assertActions(jobsByKey.get('contactDetails___completedSync'), new List<String>());
+        assertActions(jobsByKey.get('contactDetails___failedNonRestartable'), new List<String>());
+    }
+
+    @IsTest
     static void restControllerReturnsErrorForInvalidRequest() {
         RestRequest request = new RestRequest();
         request.requestUri = '/services/apexrest/e2e/applications/snapshot';
@@ -136,5 +159,33 @@ private class GetSnapshotHandlerTest {
             '{"applicationId":"' + String.valueOf(applicationId) + '","consumerKey":"webPortal"}'
         );
         return request;
+    }
+
+    private static Application_Job__c createJob(Id applicationId, String keySuffix, String status, String executionMode, Boolean canBeRestarted) {
+        return new Application_Job__c(
+            Application__c = applicationId,
+            Job_Key__c = 'contactDetails___' + keySuffix,
+            Job_Name__c = 'emailValidation',
+            Source_Step_Key__c = 'contactDetails',
+            Status__c = status,
+            Execution_Mode__c = executionMode,
+            Can_Be_Restarted__c = canBeRestarted
+        );
+    }
+
+    private static Map<String, ApplicationSnapshot.JobInfo> getJobsByKey(List<ApplicationSnapshot.JobInfo> jobs) {
+        Map<String, ApplicationSnapshot.JobInfo> jobsByKey = new Map<String, ApplicationSnapshot.JobInfo>();
+        for (ApplicationSnapshot.JobInfo job : jobs) {
+            jobsByKey.put(job.key, job);
+        }
+        return jobsByKey;
+    }
+
+    private static void assertActions(ApplicationSnapshot.JobInfo job, List<String> expectedActions) {
+        Assert.isNotNull(job);
+        Assert.areEqual(expectedActions.size(), job.availableActions.size());
+        for (String expectedAction : expectedActions) {
+            Assert.isTrue(job.availableActions.contains(expectedAction), 'Missing Job action: ' + expectedAction);
+        }
     }
 }

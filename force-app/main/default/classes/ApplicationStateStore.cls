@@ -186,6 +186,19 @@ public inherited sharing class ApplicationStateStore {
         update job;
     }
 
+    public void updateJobAsyncId(Application_Job__c job, String asyncJobId) {
+        job.External_Job_Id__c = asyncJobId;
+        update job;
+    }
+
+    public void restartJob(Application_Job__c job) {
+        job.Status__c = FrameworkConstants.JOB_STATUS_RESTART;
+        job.External_Job_Id__c = null;
+        job.Error_Code__c = null;
+        job.Error_Message__c = null;
+        update job;
+    }
+
     public void updateApplicationStep(Application__c application, String nextStepKey, Boolean completed) {
         application.Current_Step_Key__c = nextStepKey;
         if (completed) {

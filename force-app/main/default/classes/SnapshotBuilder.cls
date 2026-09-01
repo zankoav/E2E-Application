@@ -40,6 +40,7 @@ public inherited sharing class SnapshotBuilder {
         snapshot.availableActions.add('SubmitStep');
         if (jobs != null && !jobs.isEmpty()) {
             snapshot.availableActions.add('RunJob');
+            snapshot.availableActions.add('RestartJob');
             snapshot.availableActions.add('ContinueApplication');
         }
         return snapshot;
@@ -97,19 +98,68 @@ public inherited sharing class SnapshotBuilder {
         }
 
         for (Application_Job__c job : jobs) {
-            ApplicationSnapshot.JobInfo jobInfo = new ApplicationSnapshot.JobInfo();
-            jobInfo.key = job.Job_Key__c;
-            jobInfo.name = job.Job_Name__c;
-            jobInfo.label = getJobLabel(definition, job.Job_Name__c);
-            jobInfo.sourceStepKey = job.Source_Step_Key__c;
-            jobInfo.status = job.Status__c;
-            jobInfo.executionMode = job.Execution_Mode__c;
-            jobInfo.canBeRestarted = job.Can_Be_Restarted__c;
-            jobInfo.errorCode = job.Error_Code__c;
-            jobInfo.errorMessage = job.Error_Message__c;
-            jobInfos.add(jobInfo);
+            jobInfos.add(buildJobInfo(job, definition));
         }
         return jobInfos;
+    }
+
+    public ApplicationSnapshot.JobInfo buildJobInfo(Application_Job__c job, ProcessDefinition definition) {
+        if (job == null) {
+            throw new FrameworkException('Application Job is required to build JobInfo.');
+        }
+        if (definition == null) {
+            throw new FrameworkException('Process definition is required to build JobInfo.');
+        }
+
+        ApplicationSnapshot.JobInfo jobInfo = new ApplicationSnapshot.JobInfo();
+        jobInfo.key = job.Job_Key__c;
+        jobInfo.name = job.Job_Name__c;
+        jobInfo.label = getJobLabel(definition, job.Job_Name__c);
+        jobInfo.sourceStepKey = job.Source_Step_Key__c;
+        jobInfo.status = job.Status__c;
+        jobInfo.executionMode = job.Execution_Mode__c;
+        jobInfo.canBeRestarted = job.Can_Be_Restarted__c;
+        jobInfo.errorCode = job.Error_Code__c;
+        jobInfo.errorMessage = job.Error_Message__c;
+        jobInfo.availableActions = buildJobActions(job);
+        return jobInfo;
+    }
+
+    private List<String> buildJobActions(Application_Job__c job) {
+        List<String> actions = new List<String>();
+        if (canRunJob(job)) {
+            actions.add('RunJob');
+        }
+        if (canRestartJob(job)) {
+            actions.add('RestartJob');
+        }
+        return actions;
+    }
+
+    private Boolean canRunJob(Application_Job__c job) {
+        if (job.Status__c == FrameworkConstants.JOB_STATUS_QUEUED || job.Status__c == FrameworkConstants.JOB_STATUS_RESTART) {
+            return true;
+        }
+        if (job.Status__c == FrameworkConstants.JOB_STATUS_FAILED && job.Can_Be_Restarted__c) {
+            return true;
+        }
+        return getExecutionMode(job) == FrameworkConstants.JOB_EXECUTION_MODE_SYNC_CALLOUT &&
+            job.Status__c == FrameworkConstants.JOB_STATUS_PREPARING;
+    }
+
+    private Boolean canRestartJob(Application_Job__c job) {
+        if (!job.Can_Be_Restarted__c) {
+            return false;
+        }
+        return job.Status__c == FrameworkConstants.JOB_STATUS_FAILED ||
+            job.Status__c == FrameworkConstants.JOB_STATUS_PROCESSING ||
+            job.Status__c == FrameworkConstants.JOB_STATUS_PREPARING;
+    }
+
+    private String getExecutionMode(Application_Job__c job) {
+        return String.isBlank(job.Execution_Mode__c)
+            ? FrameworkConstants.JOB_EXECUTION_MODE_SYNC
+            : job.Execution_Mode__c;
     }
 
     private List<ApplicationSnapshot.StopProcessInfo> buildStopProcesses(List<Application_Stop_Process__c> stopProcesses) {

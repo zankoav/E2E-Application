@@ -172,6 +172,54 @@ Queued or Restart or restartable Failed
 
 `RunJob` validates the Application, Consumer, and Job status before execution.
 
+Snapshot exposes allowed actions per Job.
+
+Consumers should use each Job's `availableActions` instead of duplicating backend lifecycle rules.
+
+## GetJobStatus Flow
+
+```text
+API request
+  -> Controller
+  -> GetJobStatus Command Handler
+  -> load Application State
+  -> validate Consumer
+  -> load one Application_Job__c by runtime key
+  -> resolve Process Definition
+  -> build JobInfo
+  -> API response
+```
+
+`GetJobStatus` is a read-only polling command for one Job.
+
+It returns the same JobInfo shape used inside Snapshot, including `availableActions`.
+
+Mode-specific lifecycle:
+
+| Mode | Runtime behavior |
+| --- | --- |
+| `sync` | `RunJob` updates the Job to `Processing`, runs the executor in the same transaction, then stores `Completed` or `Failed`. |
+| `syncCallout` | First `RunJob` updates the Job to `Preparing` and returns Snapshot. A later `RunJob` from `Preparing` runs the executor without pre-execution DML, then stores `Completed` or `Failed`. |
+| `async` | `RunJob` updates the Job to `Processing`, enqueues async Apex, stores the async job id, and returns Snapshot. The Queueable runs the executor and stores `Completed` or `Failed`. |
+
+`Preparing` is intentionally runnable for `syncCallout`.
+
+This protects the flow from a browser reload or network failure between prepare and execute: after reload, Snapshot still exposes the Job and the Consumer can call `RunJob` again.
+
+Restart lifecycle:
+
+```text
+Failed / Processing / Preparing
+  -> RestartJob
+  -> Restart
+  -> RunJob
+  -> mode-specific execution
+```
+
+Only Jobs with `Can_Be_Restarted__c = true` can be restarted.
+
+`Completed` Jobs are intentionally not restartable through `RestartJob`.
+
 When a Job dependency blocks a Step Transition, the Consumer should call `RunJob` for required runnable Jobs and then call `ContinueApplication`.
 
 The Consumer should not call `SubmitStep` again only to retry the transition, because that would mean resubmitting the same Step data and re-evaluating Job Trigger Rules.

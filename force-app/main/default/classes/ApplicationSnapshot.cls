@@ -44,5 +44,6 @@ public class ApplicationSnapshot {
         public Boolean canBeRestarted;
         public String errorCode;
         public String errorMessage;
+        public List<String> availableActions = new List<String>();
     }
 }

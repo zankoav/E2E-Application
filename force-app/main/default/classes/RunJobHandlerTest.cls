@@ -24,6 +24,115 @@ private class RunJobHandlerTest {
     }
 
     @IsTest
+    static void preparesSyncCalloutJobOnFirstRun() {
+        Application__c application = createApplication();
+        insert createJob(
+            application.Id,
+            FrameworkConstants.JOB_STATUS_QUEUED,
+            true,
+            FrameworkConstants.JOB_EXECUTION_MODE_SYNC_CALLOUT
+        );
+
+        CommandResult result = new RunJobHandler().execute(createCommand(application.Id, 'contactDetails___emailValidation'));
+
+        Assert.areEqual(true, result.success);
+        Assert.areEqual(FrameworkConstants.JOB_STATUS_PREPARING, result.snapshot.jobs[0].status);
+        Assert.areEqual(FrameworkConstants.JOB_STATUS_PREPARING, getJob(application.Id).Status__c);
+        Assert.areEqual(1, countEvents(application.Id, FrameworkConstants.EVENT_JOB_PREPARED));
+        Assert.areEqual(0, countEvents(application.Id, FrameworkConstants.EVENT_JOB_COMPLETED));
+    }
+
+    @IsTest
+    static void runsPreparedSyncCalloutJobOnSecondRun() {
+        Application__c application = createApplication();
+        insert createJob(
+            application.Id,
+            FrameworkConstants.JOB_STATUS_PREPARING,
+            true,
+            FrameworkConstants.JOB_EXECUTION_MODE_SYNC_CALLOUT
+        );
+
+        CommandResult result = new RunJobHandler().execute(createCommand(application.Id, 'contactDetails___emailValidation'));
+
+        Assert.areEqual(true, result.success);
+        Assert.areEqual(FrameworkConstants.JOB_STATUS_COMPLETED, result.snapshot.jobs[0].status);
+        Assert.areEqual(FrameworkConstants.JOB_STATUS_COMPLETED, getJob(application.Id).Status__c);
+        Assert.areEqual(0, countEvents(application.Id, FrameworkConstants.EVENT_JOB_STARTED));
+        Assert.areEqual(1, countEvents(application.Id, FrameworkConstants.EVENT_JOB_COMPLETED));
+    }
+
+    @IsTest
+    static void restartSyncCalloutJobReturnsToPreparing() {
+        Application__c application = createApplication();
+        insert createJob(
+            application.Id,
+            FrameworkConstants.JOB_STATUS_RESTART,
+            true,
+            FrameworkConstants.JOB_EXECUTION_MODE_SYNC_CALLOUT
+        );
+
+        CommandResult result = new RunJobHandler().execute(createCommand(application.Id, 'contactDetails___emailValidation'));
+
+        Assert.areEqual(true, result.success);
+        Assert.areEqual(FrameworkConstants.JOB_STATUS_PREPARING, result.snapshot.jobs[0].status);
+        Assert.areEqual(FrameworkConstants.JOB_STATUS_PREPARING, getJob(application.Id).Status__c);
+    }
+
+    @IsTest
+    static void startsAsyncJobAndQueueableCompletesIt() {
+        Application__c application = createApplication();
+        insert createJob(
+            application.Id,
+            FrameworkConstants.JOB_STATUS_QUEUED,
+            true,
+            FrameworkConstants.JOB_EXECUTION_MODE_ASYNC
+        );
+
+        Test.startTest();
+        CommandResult result = new RunJobHandler().execute(createCommand(application.Id, 'contactDetails___emailValidation'));
+        Application_Job__c processingJob = getJob(application.Id);
+        Test.stopTest();
+
+        Assert.areEqual(true, result.success);
+        Assert.areEqual(FrameworkConstants.JOB_STATUS_PROCESSING, result.snapshot.jobs[0].status);
+        Assert.areEqual(FrameworkConstants.JOB_STATUS_PROCESSING, processingJob.Status__c);
+        Assert.isNotNull(processingJob.External_Job_Id__c);
+        Assert.areEqual(FrameworkConstants.JOB_STATUS_COMPLETED, getJob(application.Id).Status__c);
+        Assert.areEqual(1, countEvents(application.Id, FrameworkConstants.EVENT_JOB_STARTED));
+        Assert.areEqual(1, countEvents(application.Id, FrameworkConstants.EVENT_JOB_COMPLETED));
+    }
+
+    @IsTest
+    static void asyncQueueableMarksJobFailedWhenExecutionFails() {
+        Application__c application = createApplication();
+        insert new Application_Job__c(
+            Application__c = application.Id,
+            Job_Key__c = 'contactDetails___unknownJob',
+            Job_Name__c = 'unknownJob',
+            Source_Step_Key__c = 'contactDetails',
+            Status__c = FrameworkConstants.JOB_STATUS_PROCESSING,
+            Execution_Mode__c = FrameworkConstants.JOB_EXECUTION_MODE_ASYNC,
+            Can_Be_Restarted__c = true
+        );
+
+        Test.startTest();
+        System.enqueueJob(new ApplicationJobQueueable(application.Id, 'contactDetails___unknownJob'));
+        Test.stopTest();
+
+        Application_Job__c updatedJob = [
+            SELECT Status__c, Error_Code__c, Error_Message__c
+            FROM Application_Job__c
+            WHERE Application__c = :application.Id
+            AND Job_Key__c = 'contactDetails___unknownJob'
+            LIMIT 1
+        ];
+        Assert.areEqual(FrameworkConstants.JOB_STATUS_FAILED, updatedJob.Status__c);
+        Assert.areEqual('UNEXPECTED_JOB_ERROR', updatedJob.Error_Code__c);
+        Assert.isTrue(updatedJob.Error_Message__c.contains('Job definition'));
+        Assert.areEqual(1, countEvents(application.Id, FrameworkConstants.EVENT_JOB_FAILED));
+    }
+
+    @IsTest
     static void marksJobFailedWhenExecutorFails() {
         Application__c application = createApplication();
         insert createJob(application.Id, FrameworkConstants.JOB_STATUS_QUEUED, true);
@@ -162,20 +271,24 @@ private class RunJobHandlerTest {
     }
 
     private static Application_Job__c createJob(Id applicationId, String status, Boolean canBeRestarted) {
+        return createJob(applicationId, status, canBeRestarted, FrameworkConstants.JOB_EXECUTION_MODE_SYNC);
+    }
+
+    private static Application_Job__c createJob(Id applicationId, String status, Boolean canBeRestarted, String executionMode) {
         return new Application_Job__c(
             Application__c = applicationId,
             Job_Key__c = 'contactDetails___emailValidation',
             Job_Name__c = 'emailValidation',
             Source_Step_Key__c = 'contactDetails',
             Status__c = status,
-            Execution_Mode__c = FrameworkConstants.JOB_EXECUTION_MODE_SYNC,
+            Execution_Mode__c = executionMode,
             Can_Be_Restarted__c = canBeRestarted
         );
     }
 
     private static Application_Job__c getJob(Id applicationId) {
         return [
-            SELECT Status__c, Error_Code__c, Error_Message__c
+            SELECT Status__c, External_Job_Id__c, Error_Code__c, Error_Message__c
             FROM Application_Job__c
             WHERE Application__c = :applicationId
             LIMIT 1

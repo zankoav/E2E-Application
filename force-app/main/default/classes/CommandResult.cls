@@ -1,6 +1,7 @@
 public class CommandResult {
     public Boolean success;
     public ApplicationSnapshot snapshot;
+    public ApplicationSnapshot.JobInfo job;
     public List<String> errors = new List<String>();
 
     public CommandResult() {
@@ -10,6 +11,12 @@ public class CommandResult {
     public static CommandResult ok(ApplicationSnapshot snapshot) {
         CommandResult result = new CommandResult();
         result.snapshot = snapshot;
+        return result;
+    }
+
+    public static CommandResult ok(ApplicationSnapshot.JobInfo job) {
+        CommandResult result = new CommandResult();
+        result.job = job;
         return result;
     }
 

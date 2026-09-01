@@ -5,6 +5,8 @@ public class FrameworkConstants {
     public static final String EVENT_APPLICATION_INITIALIZED = 'ApplicationInitialized';
     public static final String EVENT_APPLICATION_FINISHED = 'ApplicationFinished';
     public static final String EVENT_JOB_QUEUED = 'JobQueued';
+    public static final String EVENT_JOB_PREPARED = 'JobPrepared';
+    public static final String EVENT_JOB_RESTARTED = 'JobRestarted';
     public static final String EVENT_JOB_STARTED = 'JobStarted';
     public static final String EVENT_JOB_COMPLETED = 'JobCompleted';
     public static final String EVENT_JOB_FAILED = 'JobFailed';
@@ -20,6 +22,8 @@ public class FrameworkConstants {
     public static final String JOB_STATUS_FAILED = 'Failed';
     public static final String JOB_STATUS_RESTART = 'Restart';
     public static final String JOB_EXECUTION_MODE_SYNC = 'sync';
+    public static final String JOB_EXECUTION_MODE_SYNC_CALLOUT = 'syncCallout';
+    public static final String JOB_EXECUTION_MODE_ASYNC = 'async';
     public static final String STOP_PROCESS_STATUS_ACTIVE = 'Active';
     public static final String STOP_PROCESS_STATUS_RESOLVED = 'Resolved';
 }
