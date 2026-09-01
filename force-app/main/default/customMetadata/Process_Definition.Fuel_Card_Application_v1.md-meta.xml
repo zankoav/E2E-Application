@@ -14,7 +14,7 @@
     </values>
     <values>
         <field>Definition_JSON__c</field>
-        <value xsi:type="xsd:string">{"process":{"key":"fuelCardApplication","label":"Fuel Card Application","version":"1.0.0"},"scenarios":{"newCustomer":{"label":"New Customer","initialStep":"contactDetails","steps":["contactDetails","companyDetails","finish"]}},"steps":{"contactDetails":{"label":"Contact Details","type":"standard","required":true},"companyDetails":{"label":"Company Details","type":"standard","required":true},"finish":{"label":"Finish","type":"finish","required":true}},"rules":{},"jobs":{},"integrations":{},"mappings":{},"stopProcesses":{}}</value>
+        <value xsi:type="xsd:string">{"process":{"key":"fuelCardApplication","label":"Fuel Card Application","version":"1.0.0"},"scenarios":{"newCustomer":{"label":"New Customer","initialStep":"contactDetails","steps":["contactDetails","companyDetails","finish"]}},"steps":{"contactDetails":{"label":"Contact Details","type":"standard","required":true},"companyDetails":{"label":"Company Details","type":"standard","required":true},"finish":{"label":"Finish","type":"finish","required":true}},"rules":{},"jobs":{"emailValidation":{"label":"Email Validation","executionMode":"sync","canBeRestarted":true}},"integrations":{},"mappings":{},"stopProcesses":{}}</value>
     </values>
     <values>
         <field>Process_Key__c</field>

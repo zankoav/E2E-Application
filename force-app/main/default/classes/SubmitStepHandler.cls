@@ -3,12 +3,35 @@ public inherited sharing class SubmitStepHandler {
     private ApplicationStateStore stateStore;
     private ApplicationEventStore eventStore;
     private SnapshotBuilder snapshotBuilder;
+    private RuleEngine ruleEngine;
+    private JobEngine jobEngine;
 
     public SubmitStepHandler() {
-        this.definitionResolver = new DefinitionResolver();
-        this.stateStore = new ApplicationStateStore();
-        this.eventStore = new ApplicationEventStore();
-        this.snapshotBuilder = new SnapshotBuilder();
+        this(
+            new DefinitionResolver(),
+            new ApplicationStateStore(),
+            new ApplicationEventStore(),
+            new SnapshotBuilder(),
+            new RuleEngine(),
+            new JobEngine()
+        );
+    }
+
+    @TestVisible
+    private SubmitStepHandler(
+        DefinitionResolver definitionResolver,
+        ApplicationStateStore stateStore,
+        ApplicationEventStore eventStore,
+        SnapshotBuilder snapshotBuilder,
+        RuleEngine ruleEngine,
+        JobEngine jobEngine
+    ) {
+        this.definitionResolver = definitionResolver;
+        this.stateStore = stateStore;
+        this.eventStore = eventStore;
+        this.snapshotBuilder = snapshotBuilder;
+        this.ruleEngine = ruleEngine;
+        this.jobEngine = jobEngine;
     }
 
     public CommandResult execute(SubmitStepCommand command) {
@@ -23,9 +46,33 @@ public inherited sharing class SubmitStepHandler {
             throw new FrameworkException('Scenario was not found. Scenario: ' + application.Scenario_Key__c);
         }
 
-        stateStore.submitStepData(application.Id, command.stepKey, command.data);
-
         String nextStepKey = getNextStepKey(scenario, command.stepKey);
+        List<Application_Stop_Process__c> activeStopProcesses = stateStore.getActiveStopProcesses(application.Id);
+        StepRuntimeContext context = new StepRuntimeContext(application, definition, scenario, command, nextStepKey, activeStopProcesses);
+
+        RuleResult validationResult = ruleEngine.evaluateValidationRules(context);
+        if (!validationResult.allowed) {
+            return CommandResult.blocked(buildSnapshot(application, definition), validationResult);
+        }
+
+        stateStore.submitStepData(application.Id, command.stepKey, command.data);
+        List<Application_Job__c> queuedJobs = jobEngine.createJobsForStepSubmit(context);
+        stateStore.saveJobs(queuedJobs);
+        context.setJobs(stateStore.getApplicationJobs(application.Id));
+        for (Application_Job__c queuedJob : queuedJobs) {
+            eventStore.createEvent(
+                application.Id,
+                FrameworkConstants.EVENT_JOB_QUEUED,
+                'Job queued.',
+                queuedJob
+            );
+        }
+
+        RuleResult transitionResult = ruleEngine.evaluateStepTransitionRules(context);
+        if (!transitionResult.allowed) {
+            return CommandResult.blocked(buildSnapshot(application, definition), transitionResult);
+        }
+
         Boolean completed = isFinishStep(definition, nextStepKey) || String.isBlank(nextStepKey);
         stateStore.updateApplicationStep(application, nextStepKey, completed);
 
@@ -44,7 +91,7 @@ public inherited sharing class SubmitStepHandler {
             );
         }
 
-        ApplicationSnapshot snapshot = snapshotBuilder.build(application, definition, stateStore.getApplicationData(application.Id));
+        ApplicationSnapshot snapshot = buildSnapshot(application, definition);
         eventStore.createEvent(
             application.Id,
             FrameworkConstants.EVENT_SNAPSHOT_RETURNED,
@@ -53,6 +100,16 @@ public inherited sharing class SubmitStepHandler {
         );
 
         return CommandResult.ok(snapshot);
+    }
+
+    private ApplicationSnapshot buildSnapshot(Application__c application, ProcessDefinition definition) {
+        return snapshotBuilder.build(
+            application,
+            definition,
+            stateStore.getApplicationData(application.Id),
+            stateStore.getActiveStopProcesses(application.Id),
+            stateStore.getApplicationJobs(application.Id)
+        );
     }
 
     private void validateCommand(SubmitStepCommand command) {

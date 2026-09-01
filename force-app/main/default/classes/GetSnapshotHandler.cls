@@ -18,7 +18,13 @@ public inherited sharing class GetSnapshotHandler {
         }
 
         ProcessDefinition definition = definitionResolver.resolveActive(application.Process_Key__c);
-        ApplicationSnapshot snapshot = snapshotBuilder.build(application, definition, stateStore.getApplicationData(application.Id));
+        ApplicationSnapshot snapshot = snapshotBuilder.build(
+            application,
+            definition,
+            stateStore.getApplicationData(application.Id),
+            stateStore.getActiveStopProcesses(application.Id),
+            stateStore.getApplicationJobs(application.Id)
+        );
         return CommandResult.ok(snapshot);
     }
 

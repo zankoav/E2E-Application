@@ -29,7 +29,13 @@ public inherited sharing class InitApplicationHandler {
             );
         }
 
-        ApplicationSnapshot snapshot = snapshotBuilder.build(application, definition, stateStore.getApplicationData(application.Id));
+        ApplicationSnapshot snapshot = snapshotBuilder.build(
+            application,
+            definition,
+            stateStore.getApplicationData(application.Id),
+            stateStore.getActiveStopProcesses(application.Id),
+            stateStore.getApplicationJobs(application.Id)
+        );
         eventStore.createEvent(
             application.Id,
             FrameworkConstants.EVENT_SNAPSHOT_RETURNED,

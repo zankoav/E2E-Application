@@ -1,9 +1,28 @@
 public inherited sharing class SnapshotBuilder {
     public ApplicationSnapshot build(Application__c application, ProcessDefinition definition) {
-        return build(application, definition, new List<Application_Data__c>());
+        return build(application, definition, new List<Application_Data__c>(), new List<Application_Stop_Process__c>(), new List<Application_Job__c>());
     }
 
     public ApplicationSnapshot build(Application__c application, ProcessDefinition definition, List<Application_Data__c> dataRecords) {
+        return build(application, definition, dataRecords, new List<Application_Stop_Process__c>(), new List<Application_Job__c>());
+    }
+
+    public ApplicationSnapshot build(
+        Application__c application,
+        ProcessDefinition definition,
+        List<Application_Data__c> dataRecords,
+        List<Application_Stop_Process__c> stopProcesses
+    ) {
+        return build(application, definition, dataRecords, stopProcesses, new List<Application_Job__c>());
+    }
+
+    public ApplicationSnapshot build(
+        Application__c application,
+        ProcessDefinition definition,
+        List<Application_Data__c> dataRecords,
+        List<Application_Stop_Process__c> stopProcesses,
+        List<Application_Job__c> jobs
+    ) {
         if (application == null) {
             throw new FrameworkException('Application is required to build Snapshot.');
         }
@@ -15,8 +34,14 @@ public inherited sharing class SnapshotBuilder {
         snapshot.application = buildApplicationInfo(application);
         snapshot.steps = buildSteps(application, definition);
         snapshot.data = buildData(dataRecords);
+        snapshot.jobs = buildJobs(jobs, definition);
+        snapshot.stopProcesses = buildStopProcesses(stopProcesses);
         snapshot.availableActions.add('GetSnapshot');
         snapshot.availableActions.add('SubmitStep');
+        if (jobs != null && !jobs.isEmpty()) {
+            snapshot.availableActions.add('RunJob');
+            snapshot.availableActions.add('ContinueApplication');
+        }
         return snapshot;
     }
 
@@ -65,6 +90,46 @@ public inherited sharing class SnapshotBuilder {
         return data;
     }
 
+    private List<ApplicationSnapshot.JobInfo> buildJobs(List<Application_Job__c> jobs, ProcessDefinition definition) {
+        List<ApplicationSnapshot.JobInfo> jobInfos = new List<ApplicationSnapshot.JobInfo>();
+        if (jobs == null) {
+            return jobInfos;
+        }
+
+        for (Application_Job__c job : jobs) {
+            ApplicationSnapshot.JobInfo jobInfo = new ApplicationSnapshot.JobInfo();
+            jobInfo.key = job.Job_Key__c;
+            jobInfo.name = job.Job_Name__c;
+            jobInfo.label = getJobLabel(definition, job.Job_Name__c);
+            jobInfo.sourceStepKey = job.Source_Step_Key__c;
+            jobInfo.status = job.Status__c;
+            jobInfo.executionMode = job.Execution_Mode__c;
+            jobInfo.canBeRestarted = job.Can_Be_Restarted__c;
+            jobInfo.errorCode = job.Error_Code__c;
+            jobInfo.errorMessage = job.Error_Message__c;
+            jobInfos.add(jobInfo);
+        }
+        return jobInfos;
+    }
+
+    private List<ApplicationSnapshot.StopProcessInfo> buildStopProcesses(List<Application_Stop_Process__c> stopProcesses) {
+        List<ApplicationSnapshot.StopProcessInfo> stopProcessInfos = new List<ApplicationSnapshot.StopProcessInfo>();
+        if (stopProcesses == null) {
+            return stopProcessInfos;
+        }
+
+        for (Application_Stop_Process__c stopProcess : stopProcesses) {
+            ApplicationSnapshot.StopProcessInfo stopProcessInfo = new ApplicationSnapshot.StopProcessInfo();
+            stopProcessInfo.code = stopProcess.Code__c;
+            stopProcessInfo.label = stopProcess.Label__c;
+            stopProcessInfo.type = stopProcess.Type__c;
+            stopProcessInfo.status = stopProcess.Status__c;
+            stopProcessInfo.message = stopProcess.Message__c;
+            stopProcessInfos.add(stopProcessInfo);
+        }
+        return stopProcessInfos;
+    }
+
     private Object getDataValue(Application_Data__c dataRecord) {
         if (dataRecord.Type__c == 'Json') {
             return String.isBlank(dataRecord.Value_JSON__c)
@@ -82,6 +147,18 @@ public inherited sharing class SnapshotBuilder {
         return dataRecord.Value__c;
     }
 
+    private String getJobLabel(ProcessDefinition definition, String jobName) {
+        Map<String, Object> jobs = getObjectMap(definition.raw, 'jobs');
+        Object rawJob = jobs.get(jobName);
+        if (rawJob instanceof Map<String, Object>) {
+            Object label = ((Map<String, Object>) rawJob).get('label');
+            if (label != null) {
+                return String.valueOf(label);
+            }
+        }
+        return jobName;
+    }
+
     private String getStepLabel(ProcessDefinition definition, String stepKey) {
         Object rawStep = definition.steps.get(stepKey);
         if (rawStep instanceof Map<String, Object>) {
@@ -91,5 +168,12 @@ public inherited sharing class SnapshotBuilder {
             }
         }
         return stepKey;
+    }
+
+    private Map<String, Object> getObjectMap(Map<String, Object> source, String key) {
+        Object value = source.get(key);
+        return value instanceof Map<String, Object>
+            ? (Map<String, Object>) value
+            : new Map<String, Object>();
     }
 }

@@ -14,6 +14,7 @@ REST endpoints are transport. Commands are the application-level meaning.
 | `GetSnapshot` | Return the current Snapshot for an existing Application. |
 | `SubmitStep` | Submit data for the current Step and evaluate process movement. |
 | `RunJob` | Run a specific Job instance when the Snapshot allows it. |
+| `ContinueApplication` | Retry Step Transition after blocking Jobs or Stop Processes changed. |
 | `GetJobStatus` | Read current Job status. |
 | `ConvertApplications` | Convert completed Applications into CRM records, usually in bulk. |
 
@@ -74,12 +75,31 @@ Runs a Job instance.
 Responsibilities:
 
 - validate Job can run
+- move runnable Job to `Processing`
 - respect execution mode
 - invoke JobExecutor extension
-- update Job status
+- update Job status to `Completed` or `Failed`
 - store structured result or error
 
+In the first skeleton, `RunJob` supports synchronous default execution. Async and callout-safe preparation are lifecycle extensions, not part of `SubmitStep`.
+
 Jobs can run sync, async, or with callout-safe preparation.
+
+## ContinueApplication
+
+Retries process movement from the current Step without submitting data again.
+
+Responsibilities:
+
+- validate Consumer access
+- load current Application State
+- evaluate Step Transition Rules again
+- move Application to the next Step when blockers are gone
+- return updated Snapshot
+
+`ContinueApplication` is the command a Consumer calls after required Jobs have completed or Stop Processes have been resolved.
+
+It should not persist Step data, create Jobs, or run Jobs.
 
 ## GetJobStatus
 
@@ -112,4 +132,3 @@ Conversion is usually system/admin driven, not a normal frontend action.
 Every API request should map to a clear Command.
 
 Controllers should parse requests and return responses. Process decisions should live in the application/runtime layers.
-

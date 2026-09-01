@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomObject xmlns="http://soap.sforce.com/2006/04/metadata">
+    <deploymentStatus>Deployed</deploymentStatus>
+    <enableActivities>false</enableActivities>
+    <enableBulkApi>true</enableBulkApi>
+    <enableFeeds>false</enableFeeds>
+    <enableHistory>false</enableHistory>
+    <enableReports>true</enableReports>
+    <label>Application Stop Process</label>
+    <nameField>
+        <displayFormat>STP-{000000}</displayFormat>
+        <label>Application Stop Process Number</label>
+        <type>AutoNumber</type>
+    </nameField>
+    <pluralLabel>Application Stop Processes</pluralLabel>
+    <sharingModel>ControlledByParent</sharingModel>
+</CustomObject>

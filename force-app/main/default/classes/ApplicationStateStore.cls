@@ -93,6 +93,99 @@ public inherited sharing class ApplicationStateStore {
         ];
     }
 
+    public List<Application_Stop_Process__c> getActiveStopProcesses(Id applicationId) {
+        if (applicationId == null) {
+            throw new FrameworkException('Application id is required.');
+        }
+
+        return [
+            SELECT Code__c, Label__c, Type__c, Status__c, Message__c, Activated_At__c
+            FROM Application_Stop_Process__c
+            WHERE Application__c = :applicationId
+            AND Status__c = :FrameworkConstants.STOP_PROCESS_STATUS_ACTIVE
+            ORDER BY Code__c
+        ];
+    }
+
+    public List<Application_Job__c> getApplicationJobs(Id applicationId) {
+        if (applicationId == null) {
+            throw new FrameworkException('Application id is required.');
+        }
+
+        return [
+            SELECT Job_Key__c, Job_Name__c, Source_Step_Key__c, Status__c, Execution_Mode__c,
+                Can_Be_Restarted__c, External_Job_Id__c, Error_Code__c, Error_Message__c
+            FROM Application_Job__c
+            WHERE Application__c = :applicationId
+            ORDER BY Source_Step_Key__c, Job_Key__c
+        ];
+    }
+
+    public Application_Job__c getApplicationJob(Id applicationId, String jobKey) {
+        if (applicationId == null) {
+            throw new FrameworkException('Application id is required.');
+        }
+        if (String.isBlank(jobKey)) {
+            throw new FrameworkException('Job key is required.');
+        }
+
+        List<Application_Job__c> jobs = [
+            SELECT Id, Application__c, Job_Key__c, Job_Name__c, Source_Step_Key__c, Status__c,
+                Execution_Mode__c, Can_Be_Restarted__c, External_Job_Id__c, Error_Code__c, Error_Message__c
+            FROM Application_Job__c
+            WHERE Application__c = :applicationId
+            AND Job_Key__c = :jobKey
+            LIMIT 1
+        ];
+
+        if (jobs.isEmpty()) {
+            throw new FrameworkException('Application Job was not found. Job: ' + jobKey);
+        }
+        return jobs[0];
+    }
+
+    public void saveJobs(List<Application_Job__c> jobs) {
+        if (jobs == null || jobs.isEmpty()) {
+            return;
+        }
+
+        Set<Id> applicationIds = new Set<Id>();
+        Set<String> jobKeys = new Set<String>();
+        for (Application_Job__c job : jobs) {
+            if (job.Application__c != null && !String.isBlank(job.Job_Key__c)) {
+                applicationIds.add(job.Application__c);
+                jobKeys.add(job.Job_Key__c);
+            }
+        }
+
+        Map<String, Application_Job__c> existingJobsByRuntimeKey = new Map<String, Application_Job__c>();
+        if (!applicationIds.isEmpty() && !jobKeys.isEmpty()) {
+            for (Application_Job__c existingJob : [
+                SELECT Id, Application__c, Job_Key__c
+                FROM Application_Job__c
+                WHERE Application__c IN :applicationIds
+                AND Job_Key__c IN :jobKeys
+            ]) {
+                existingJobsByRuntimeKey.put(createJobRuntimeKey(existingJob.Application__c, existingJob.Job_Key__c), existingJob);
+            }
+        }
+
+        for (Application_Job__c job : jobs) {
+            String runtimeKey = createJobRuntimeKey(job.Application__c, job.Job_Key__c);
+            if (existingJobsByRuntimeKey.containsKey(runtimeKey)) {
+                job.Id = existingJobsByRuntimeKey.get(runtimeKey).Id;
+            }
+        }
+        upsert jobs;
+    }
+
+    public void updateJobStatus(Application_Job__c job, String status, String errorCode, String errorMessage) {
+        job.Status__c = status;
+        job.Error_Code__c = errorCode;
+        job.Error_Message__c = errorMessage;
+        update job;
+    }
+
     public void updateApplicationStep(Application__c application, String nextStepKey, Boolean completed) {
         application.Current_Step_Key__c = nextStepKey;
         if (completed) {
@@ -127,6 +220,10 @@ public inherited sharing class ApplicationStateStore {
         ];
 
         return applications.isEmpty() ? null : applications[0];
+    }
+
+    private String createJobRuntimeKey(Id applicationId, String jobKey) {
+        return String.valueOf(applicationId) + '|' + jobKey;
     }
 
     private void assignValue(Application_Data__c dataRecord, Object value) {

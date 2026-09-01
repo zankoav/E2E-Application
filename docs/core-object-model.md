@@ -13,6 +13,7 @@ Use a hybrid Salesforce persistence model.
 | `Application__c` | Root E2E process instance and lifecycle owner. |
 | `Application_Data__c` | Dynamic collected process data. |
 | `Application_Job__c` | Job instances and status lifecycle. |
+| `Application_Stop_Process__c` | Active or resolved stop conditions for an application. |
 | `Application_Event__c` | Audit/debug event history. |
 | `Application_Record_Link__c` | Links from Application to created or updated CRM records. |
 
@@ -68,6 +69,16 @@ Possible fields:
 
 Stores concrete job instances.
 
+Jobs are runtime state. A Job Definition describes what can run; `Application_Job__c` stores the concrete job instance created for one Application.
+
+Initial job instance key format:
+
+```text
+sourceStepKey + "___" + jobName
+```
+
+This keeps repeated jobs from different steps separate while allowing the same step/job pair to be reused instead of duplicated.
+
 Possible fields:
 
 | Field | Purpose |
@@ -82,6 +93,46 @@ Possible fields:
 | `External_Job_Id__c` | Async/platform job id when applicable. |
 | `Error_Code__c` | Structured error code. |
 | `Error_Message__c` | Structured error message. |
+
+Initial statuses:
+
+```text
+Queued
+Preparing
+Processing
+Completed
+Failed
+Restart
+```
+
+`SubmitStep` can create queued job instances. Actual execution belongs to the `RunJob` command.
+
+Initial runnable statuses:
+
+```text
+Queued
+Restart
+Failed when Can_Be_Restarted__c is true
+```
+
+## Application_Stop_Process__c
+
+Stores runtime stop conditions for an Application.
+
+Active Stop Processes block step transition by default. A step can pass only the stop process codes explicitly listed in its `allowedStopProcesses` definition.
+
+Possible fields:
+
+| Field | Purpose |
+| --- | --- |
+| `Application__c` | Parent application. |
+| `Code__c` | Stable stop process code, for example `DUPLICATE_CUSTOMER`. |
+| `Label__c` | Human-readable label for API snapshot/support screens. |
+| `Type__c` | Stop process type, for example `ManualUnlockRequired`. |
+| `Status__c` | `Active` or `Resolved`. |
+| `Message__c` | Optional message for trusted Consumers/support. |
+| `Activated_At__c` | When the stop process became active. |
+| `Resolved_At__c` | When the stop process was resolved. |
 
 ## Application_Event__c
 

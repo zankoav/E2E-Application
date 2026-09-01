@@ -81,6 +81,130 @@ private class SubmitStepHandlerTest {
     }
 
     @IsTest
+    static void validationRuleBlockPreventsDataPersistenceAndTransition() {
+        Application__c application = createApplication();
+        SubmitStepCommand command = createSubmitCommand(application.Id, 'contactDetails');
+        command.data.put('firstName', 'Alex');
+
+        CommandResult result = createHandler(new BlockingValidationRuleEngine()).execute(command);
+
+        Assert.areEqual(false, result.success);
+        Assert.areEqual('Validation blocked by test rule.', result.errors[0]);
+
+        Application__c updatedApplication = [
+            SELECT Current_Step_Key__c
+            FROM Application__c
+            WHERE Id = :application.Id
+            LIMIT 1
+        ];
+        Assert.areEqual('contactDetails', updatedApplication.Current_Step_Key__c);
+        Assert.areEqual(0, getDataByKey(application.Id).size());
+    }
+
+    @IsTest
+    static void transitionRuleBlockKeepsAcceptedDataOnCurrentStep() {
+        Application__c application = createApplication();
+        SubmitStepCommand command = createSubmitCommand(application.Id, 'contactDetails');
+        command.data.put('firstName', 'Alex');
+
+        CommandResult result = createHandler(new BlockingTransitionRuleEngine()).execute(command);
+
+        Assert.areEqual(false, result.success);
+        Assert.areEqual('Transition blocked by test rule.', result.errors[0]);
+
+        Application__c updatedApplication = [
+            SELECT Current_Step_Key__c
+            FROM Application__c
+            WHERE Id = :application.Id
+            LIMIT 1
+        ];
+        Assert.areEqual('contactDetails', updatedApplication.Current_Step_Key__c);
+        Assert.areEqual('Alex', getDataByKey(application.Id).get('firstName').Value__c);
+    }
+
+    @IsTest
+    static void submitCreatesJobsAndReturnsThemInSnapshot() {
+        Application__c application = createApplication();
+        SubmitStepCommand command = createSubmitCommand(application.Id, 'contactDetails');
+
+        CommandResult result = createHandler(new RuleEngine(), new TestJobEngine()).execute(command);
+
+        Assert.areEqual(true, result.success);
+        Assert.areEqual(1, result.snapshot.jobs.size());
+        Assert.areEqual('contactDetails___emailValidation', result.snapshot.jobs[0].key);
+        Assert.areEqual(FrameworkConstants.JOB_STATUS_QUEUED, result.snapshot.jobs[0].status);
+
+        Integer queuedEvents = [
+            SELECT COUNT()
+            FROM Application_Event__c
+            WHERE Application__c = :application.Id
+            AND Event_Type__c = :FrameworkConstants.EVENT_JOB_QUEUED
+        ];
+        Assert.areEqual(1, queuedEvents);
+    }
+
+    @IsTest
+    static void queuedRequiredJobBlocksStepTransition() {
+        Application__c application = createApplication();
+        SubmitStepCommand command = createSubmitCommand(application.Id, 'contactDetails');
+
+        CommandResult result = createHandler(new RequiredJobRuleEngine(), new TestJobEngine()).execute(command);
+
+        Assert.areEqual(false, result.success);
+        Assert.areEqual('Required Job is not completed. Job: contactDetails___emailValidation', result.errors[0]);
+        Assert.areEqual(1, result.snapshot.jobs.size());
+        Assert.areEqual(FrameworkConstants.JOB_STATUS_QUEUED, result.snapshot.jobs[0].status);
+
+        Application__c updatedApplication = [
+            SELECT Current_Step_Key__c
+            FROM Application__c
+            WHERE Id = :application.Id
+            LIMIT 1
+        ];
+        Assert.areEqual('contactDetails', updatedApplication.Current_Step_Key__c);
+    }
+
+    @IsTest
+    static void activeStopProcessBlocksTransitionByDefault() {
+        Application__c application = createApplication();
+        insert createStopProcess(application.Id, 'DUPLICATE_CUSTOMER', FrameworkConstants.STOP_PROCESS_STATUS_ACTIVE);
+
+        SubmitStepCommand command = createSubmitCommand(application.Id, 'contactDetails');
+        command.data.put('firstName', 'Alex');
+
+        CommandResult result = new SubmitStepHandler().execute(command);
+
+        Assert.areEqual(false, result.success);
+        Assert.areEqual('Active Stop Process blocks transition. Code: DUPLICATE_CUSTOMER', result.errors[0]);
+        Assert.areEqual(1, result.snapshot.stopProcesses.size());
+        Assert.areEqual('DUPLICATE_CUSTOMER', result.snapshot.stopProcesses[0].code);
+
+        Application__c updatedApplication = [
+            SELECT Current_Step_Key__c
+            FROM Application__c
+            WHERE Id = :application.Id
+            LIMIT 1
+        ];
+        Assert.areEqual('contactDetails', updatedApplication.Current_Step_Key__c);
+        Assert.areEqual('Alex', getDataByKey(application.Id).get('firstName').Value__c);
+    }
+
+    @IsTest
+    static void resolvedStopProcessDoesNotBlockTransition() {
+        Application__c application = createApplication();
+        insert createStopProcess(application.Id, 'DUPLICATE_CUSTOMER', FrameworkConstants.STOP_PROCESS_STATUS_RESOLVED);
+
+        SubmitStepCommand command = createSubmitCommand(application.Id, 'contactDetails');
+        command.data.put('firstName', 'Alex');
+
+        CommandResult result = new SubmitStepHandler().execute(command);
+
+        Assert.areEqual(true, result.success);
+        Assert.areEqual('companyDetails', result.snapshot.application.currentStep);
+        Assert.areEqual(0, result.snapshot.stopProcesses.size());
+    }
+
+    @IsTest
     static void restControllerSubmitsStep() {
         Application__c application = createApplication();
         RestContext.request = createSubmitRequest(application.Id, 'contactDetails');
@@ -174,5 +298,74 @@ private class SubmitStepHandlerTest {
             dataByKey.put(dataRecord.Key__c, dataRecord);
         }
         return dataByKey;
+    }
+
+    private static Application_Stop_Process__c createStopProcess(Id applicationId, String code, String status) {
+        return new Application_Stop_Process__c(
+            Application__c = applicationId,
+            Code__c = code,
+            Label__c = 'Duplicate Customer',
+            Type__c = 'ManualUnlockRequired',
+            Status__c = status,
+            Message__c = 'Manual review is required.',
+            Activated_At__c = System.now()
+        );
+    }
+
+    private static SubmitStepHandler createHandler(RuleEngine ruleEngine) {
+        return createHandler(ruleEngine, new JobEngine());
+    }
+
+    private static SubmitStepHandler createHandler(RuleEngine ruleEngine, JobEngine jobEngine) {
+        return new SubmitStepHandler(
+            new DefinitionResolver(),
+            new ApplicationStateStore(),
+            new ApplicationEventStore(),
+            new SnapshotBuilder(),
+            ruleEngine,
+            jobEngine
+        );
+    }
+
+    private class BlockingValidationRuleEngine extends RuleEngine {
+        public override RuleResult evaluateValidationRules(StepRuntimeContext context) {
+            return RuleResult.block('TEST_VALIDATION_BLOCKED', 'Validation blocked by test rule.');
+        }
+    }
+
+    private class BlockingTransitionRuleEngine extends RuleEngine {
+        public override RuleResult evaluateStepTransitionRules(StepRuntimeContext context) {
+            return RuleResult.block('TEST_TRANSITION_BLOCKED', 'Transition blocked by test rule.');
+        }
+    }
+
+    private class TestJobEngine extends JobEngine {
+        public override List<Application_Job__c> createJobsForStepSubmit(StepRuntimeContext context) {
+            return new List<Application_Job__c>{
+                new Application_Job__c(
+                    Application__c = context.application.Id,
+                    Job_Key__c = context.currentStepKey + '___emailValidation',
+                    Job_Name__c = 'emailValidation',
+                    Source_Step_Key__c = context.currentStepKey,
+                    Status__c = FrameworkConstants.JOB_STATUS_QUEUED,
+                    Execution_Mode__c = FrameworkConstants.JOB_EXECUTION_MODE_SYNC,
+                    Can_Be_Restarted__c = true
+                )
+            };
+        }
+    }
+
+    private class RequiredJobRuleEngine extends RuleEngine {
+        public override RuleResult evaluateStepTransitionRules(StepRuntimeContext context) {
+            for (Application_Job__c job : context.jobs) {
+                if (job.Job_Key__c == 'contactDetails___emailValidation' && job.Status__c == FrameworkConstants.JOB_STATUS_COMPLETED) {
+                    return RuleResult.allow();
+                }
+            }
+            return RuleResult.block(
+                'WAITING_FOR_JOBS',
+                'Required Job is not completed. Job: contactDetails___emailValidation'
+            );
+        }
     }
 }

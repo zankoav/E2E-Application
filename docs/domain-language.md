@@ -34,7 +34,7 @@ A step can be required, optional, or conditional. Conditional steps are included
 
 An action requested through the API.
 
-Examples: init application, submit step, run job, get job status, convert application.
+Examples: init application, submit step, run job, continue application, get job status, convert application.
 
 ## State
 

@@ -242,6 +242,16 @@ Stop Processes define known stop conditions.
 
 Stop Processes are active on Application State. Step Transition Rules decide whether a specific transition can pass them.
 
+Runtime state is stored in `Application_Stop_Process__c`.
+
+Strict policy:
+
+```text
+active Stop Processes block transition by default
+allowedStopProcesses explicitly lists codes that the current step transition can pass
+resolved Stop Processes are returned only for audit/support, not as active blockers
+```
+
 ## Guiding Principle
 
 The process definition should describe behavior.

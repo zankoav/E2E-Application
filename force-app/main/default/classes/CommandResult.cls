@@ -19,4 +19,12 @@ public class CommandResult {
         result.errors.add(message);
         return result;
     }
+
+    public static CommandResult blocked(ApplicationSnapshot snapshot, RuleResult ruleResult) {
+        CommandResult result = new CommandResult();
+        result.success = false;
+        result.snapshot = snapshot;
+        result.errors.add(ruleResult.message);
+        return result;
+    }
 }

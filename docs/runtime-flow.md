@@ -92,6 +92,30 @@ Possible outcomes:
 | `TransitionCompleted` | Application moved to another Step. |
 | `ApplicationFinished` | Application entered final immutable State. |
 
+## ContinueApplication Flow
+
+```text
+API request
+  -> Controller
+  -> ContinueApplication Command Handler
+  -> load Application State
+  -> resolve current Step Definition
+  -> load active Jobs and Stop Processes
+  -> evaluate Step Transition Rules
+  -> move Application if transition is allowed
+  -> build Snapshot
+  -> API response
+```
+
+`ContinueApplication` is used after `SubmitStep` accepted data but could not move forward.
+
+It does not:
+
+- run Validation Rules again
+- persist submitted data again
+- create Job instances again
+- run Job execution
+
 ## Step Transition Flow
 
 Step Transition Rules decide whether Application can move from one Step to another.
@@ -121,6 +145,7 @@ Job Trigger Rule matched
   -> RunJob Command Handler validates Job can run
   -> JobExecutor extension runs
   -> Job Engine stores result/status
+  -> Consumer calls ContinueApplication when required Jobs are completed
 ```
 
 Job execution modes:
@@ -132,6 +157,24 @@ Job execution modes:
 | `async` | Run through async Apex. |
 
 Job dependencies define execution order and can block Step Transition Rules.
+
+In the first runtime skeleton, `SubmitStep` only creates or updates `Application_Job__c` records in `Queued` status.
+
+Job execution is intentionally handled by `RunJob`, not by `SubmitStep`.
+
+Initial `RunJob` lifecycle:
+
+```text
+Queued or Restart or restartable Failed
+  -> Processing
+  -> Completed or Failed
+```
+
+`RunJob` validates the Application, Consumer, and Job status before execution.
+
+When a Job dependency blocks a Step Transition, the Consumer should call `RunJob` for required runnable Jobs and then call `ContinueApplication`.
+
+The Consumer should not call `SubmitStep` again only to retry the transition, because that would mean resubmitting the same Step data and re-evaluating Job Trigger Rules.
 
 ## Integration Flow
 
@@ -180,4 +223,3 @@ Conversion is usually system/admin driven and should support bulk processing.
 Commands change or read Application State through clear runtime layers.
 
 Controllers should stay thin. Business decisions should be explicit Rules. Custom behavior should enter through Extensions.
-

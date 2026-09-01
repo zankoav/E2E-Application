@@ -55,6 +55,27 @@ private class GetSnapshotHandlerTest {
     }
 
     @IsTest
+    static void returnsActiveStopProcessesInSnapshot() {
+        Application__c application = createApplication();
+        insert new Application_Stop_Process__c(
+            Application__c = application.Id,
+            Code__c = 'DUPLICATE_CUSTOMER',
+            Label__c = 'Duplicate Customer',
+            Type__c = 'ManualUnlockRequired',
+            Status__c = FrameworkConstants.STOP_PROCESS_STATUS_ACTIVE,
+            Message__c = 'Manual review is required.',
+            Activated_At__c = System.now()
+        );
+
+        CommandResult result = new GetSnapshotHandler().execute(createSnapshotCommand(application.Id, 'webPortal'));
+
+        Assert.areEqual(true, result.success);
+        Assert.areEqual(1, result.snapshot.stopProcesses.size());
+        Assert.areEqual('DUPLICATE_CUSTOMER', result.snapshot.stopProcesses[0].code);
+        Assert.areEqual('Duplicate Customer', result.snapshot.stopProcesses[0].label);
+    }
+
+    @IsTest
     static void restControllerReturnsErrorForInvalidRequest() {
         RestRequest request = new RestRequest();
         request.requestUri = '/services/apexrest/e2e/applications/snapshot';
