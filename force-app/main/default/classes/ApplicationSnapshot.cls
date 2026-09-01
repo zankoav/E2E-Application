@@ -24,6 +24,7 @@ public class ApplicationSnapshot {
         public String label;
         public String status;
         public Boolean available;
+        public String unavailableReason;
     }
 
     public class StopProcessInfo {

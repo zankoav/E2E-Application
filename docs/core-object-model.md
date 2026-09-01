@@ -38,6 +38,14 @@ Initial fields:
 | `Completed_At__c` | When the application reached final immutable state. |
 | `Converted_At__c` | When conversion finished successfully. |
 
+When an Application reaches the final state, `Conversion_Status__c` becomes `Ready`.
+
+Conversion then moves through `Converting`, `Converted`, or `Failed`.
+
+In bulk conversion, one Application can fail while another Application in the same batch is converted successfully.
+
+Failed conversion is retried only when the Conversion command explicitly requests retry.
+
 ## Application_Data__c
 
 Stores dynamic process data by logical keys.
@@ -164,6 +172,10 @@ Stores links to CRM records created or updated by Conversion.
 
 This keeps the framework generic. The core does not need hardcoded lookup fields for every possible CRM object.
 
+These links are also used as the conversion idempotency boundary.
+
+If Conversion is retried after a partial failure, existing links prevent duplicate CRM records for the same Application and Conversion key.
+
 Possible fields:
 
 | Field | Purpose |
@@ -212,6 +224,31 @@ stop process policies
 ```
 
 Definitions should be validated by an Apex validator before use.
+
+Possible `Consumer_Definition__mdt` fields:
+
+| Field | Purpose |
+| --- | --- |
+| `Consumer_Key__c` | Stable API consumer key, for example `webPortal` or `mobileApp`. |
+| `Active__c` | Whether this consumer can use the API. |
+| `Allowed_Process_Keys__c` | Comma, semicolon, or newline separated process keys. `*` allows all processes. |
+| `Allowed_Scenario_Keys__c` | Comma, semicolon, or newline separated `processKey:scenarioKey` values. `*` allows all scenarios. |
+
+Consumer Definition is the API boundary.
+
+Scenario `consumerKeys` inside Process Definition can still narrow access for one specific scenario.
+
+Possible `Integration_Definition__mdt` fields:
+
+| Field | Purpose |
+| --- | --- |
+| `Integration_Key__c` | Stable integration key. |
+| `Active__c` | Whether this integration definition can be resolved. |
+| `Adapter_Class__c` | Apex class implementing `IntegrationAdapter`. |
+| `Named_Credential__c` | Optional named credential reference for callout adapters. |
+| `Settings_JSON__c` | Adapter settings in JSON. |
+
+Process Definition can reference Integration Definition by `definitionKey` and override adapter settings for one process.
 
 ## Guiding Principle
 

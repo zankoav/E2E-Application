@@ -75,6 +75,10 @@ Scenarios define variants of the process.
 
 A scenario can have a different step list, step order, rules, jobs, mappings, and consumer restrictions.
 
+`consumerKeys` is an optional scenario-level restriction.
+
+The primary trusted consumer boundary is `Consumer_Definition__mdt`. Scenario `consumerKeys` can narrow access for a specific scenario after the consumer has already been recognized as active and trusted.
+
 ## Steps
 
 Steps define process stages.
@@ -107,6 +111,16 @@ Steps define process stages.
 ```
 
 Step can be required, optional, or conditional.
+
+`availabilityRules` control whether a step is available, locked, skipped, or hidden for the current Application State.
+
+Availability rule block codes have framework meaning:
+
+| Code | Runtime meaning |
+| --- | --- |
+| `LOCKED` | Show the Step but do not allow transition into it. |
+| `SKIPPED` | Do not enter this Step for the current Application State. |
+| `HIDDEN` | Do not show or enter this Step for the current Application State. |
 
 Active Stop Processes block step transition by default. `allowedStopProcesses` explicitly lists stop process codes that this step transition can pass.
 
@@ -144,6 +158,22 @@ Rules make decisions during the application lifecycle.
 
 Rule definitions can be declarative or can reference custom Apex extension classes.
 
+## Definition Validation
+
+Process Definition is validated before runtime commands use it.
+
+Validation checks:
+
+- process key and version
+- scenario initial step and scenario step list
+- scenario references to existing steps
+- step references to existing availability, validation, and transition rules
+- job trigger rules have `jobKey`
+- job trigger rules reference existing jobs
+- job `executionMode` is one of `sync`, `syncCallout`, or `async`
+
+This validation is a package guardrail. Broken configuration should fail early, before Application State is changed by a runtime command.
+
 ## Jobs
 
 Jobs define backend work.
@@ -180,13 +210,21 @@ Integrations define reusable adapter references.
   "integrations": {
     "emailProvider": {
       "definitionKey": "emailProvider",
-      "adapterClass": "EmailProviderIntegrationAdapter"
+      "adapterClass": "EmailProviderIntegrationAdapter",
+      "namedCredential": "EmailProvider",
+      "settings": {
+        "timeoutMs": 5000
+      }
     }
   }
 }
 ```
 
 Integration can perform callouts or Salesforce reads, but should not perform DML or change Application State.
+
+If `definitionKey` is present, the framework loads `Integration_Definition__mdt` first and then applies process-level overrides.
+
+If `adapterClass` is omitted, `DefaultIntegrationAdapter` is used.
 
 ## Mappings
 
@@ -206,7 +244,8 @@ Mappings describe how Application data becomes CRM records.
       "fields": [
         {
           "target": "Name",
-          "source": "company.name"
+          "source": "company.name",
+          "transformClass": "CompanyNameMappingTransform"
         },
         {
           "target": "Phone",
@@ -222,7 +261,61 @@ Mapping without `scenarioKeys` applies to all scenarios in the process.
 
 Mapping with `scenarioKeys` applies only to those scenarios.
 
-Conversion executes mappings in bulk.
+Initial skeleton supports `insert` mappings.
+
+`upsert` mappings use `match.field` and `match.source` to find an existing record. If a match is found, Conversion updates it. If not, Conversion inserts a new record.
+
+This is framework-controlled match behavior. `match.field` does not have to be a Salesforce External Id field in the initial skeleton.
+
+Mappings can depend on other mappings.
+
+Use `dependsOn` when a target record needs another mapped record to be saved first.
+
+Use field-level `fromRecord` to copy the saved parent record Id into a lookup field:
+
+```json
+{
+  "mappings": {
+    "account": {
+      "role": "PrimaryAccount",
+      "targetObject": "Account",
+      "operation": "insert",
+      "fields": [
+        {
+          "target": "Name",
+          "source": "company.name"
+        }
+      ]
+    },
+    "contact": {
+      "role": "PrimaryContact",
+      "targetObject": "Contact",
+      "operation": "insert",
+      "dependsOn": ["account"],
+      "fields": [
+        {
+          "target": "LastName",
+          "source": "contact.lastName"
+        },
+        {
+          "target": "AccountId",
+          "fromRecord": "account"
+        }
+      ]
+    }
+  }
+}
+```
+
+If a field uses `fromRecord`, the referenced mapping must also be listed in `dependsOn`.
+
+Conversion executes mappings in bulk and stores created record ids in `Application_Record_Link__c`.
+
+Definition Validation checks mapping target object, operation, and field mappings before runtime conversion.
+
+`transformClass` is optional. When present, the class must implement `MappingTransform`.
+
+Mapping Transform receives `MappingTransformContext` and returns the final value for the target field.
 
 ## Stop Processes
 

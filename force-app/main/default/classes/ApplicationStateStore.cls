@@ -203,9 +203,116 @@ public inherited sharing class ApplicationStateStore {
         application.Current_Step_Key__c = nextStepKey;
         if (completed) {
             application.Status__c = FrameworkConstants.APPLICATION_STATUS_COMPLETED;
+            application.Conversion_Status__c = FrameworkConstants.CONVERSION_STATUS_READY;
             application.Completed_At__c = System.now();
         }
         update application;
+    }
+
+    public List<Application__c> getApplicationsForConversion(ConvertApplicationsCommand command) {
+        Set<Id> applicationIds = command == null ? new Set<Id>() : command.getApplicationIds();
+        Integer maxBatchSize = command == null ? 50 : command.getMaxBatchSize();
+        Set<String> conversionStatuses = new Set<String>{ FrameworkConstants.CONVERSION_STATUS_READY };
+        if (command != null && command.shouldRetryFailed()) {
+            conversionStatuses.add(FrameworkConstants.CONVERSION_STATUS_FAILED);
+        }
+
+        if (!applicationIds.isEmpty()) {
+            return [
+                SELECT Id, Name, Process_Key__c, Scenario_Key__c, Current_Step_Key__c, Status__c,
+                    Conversion_Status__c, Consumer_Key__c, External_Reference__c, Definition_Version__c,
+                    Started_At__c, Completed_At__c, Converted_At__c
+                FROM Application__c
+                WHERE Id IN :applicationIds
+                AND Process_Key__c = :command.processKey
+                AND Status__c = :FrameworkConstants.APPLICATION_STATUS_COMPLETED
+                AND Conversion_Status__c IN :conversionStatuses
+                LIMIT :maxBatchSize
+            ];
+        }
+
+        return [
+            SELECT Id, Name, Process_Key__c, Scenario_Key__c, Current_Step_Key__c, Status__c,
+                Conversion_Status__c, Consumer_Key__c, External_Reference__c, Definition_Version__c,
+                Started_At__c, Completed_At__c, Converted_At__c
+            FROM Application__c
+            WHERE Process_Key__c = :command.processKey
+            AND Status__c = :FrameworkConstants.APPLICATION_STATUS_COMPLETED
+            AND Conversion_Status__c IN :conversionStatuses
+            LIMIT :maxBatchSize
+        ];
+    }
+
+    public Map<Id, List<Application_Data__c>> getApplicationDataByApplicationId(Set<Id> applicationIds) {
+        Map<Id, List<Application_Data__c>> recordsByApplicationId = new Map<Id, List<Application_Data__c>>();
+        if (applicationIds == null || applicationIds.isEmpty()) {
+            return recordsByApplicationId;
+        }
+
+        for (Application_Data__c dataRecord : [
+            SELECT Application__c, Key__c, Value__c, Value_JSON__c, Type__c, Step_Key__c
+            FROM Application_Data__c
+            WHERE Application__c IN :applicationIds
+            ORDER BY Application__c, Step_Key__c, Key__c
+        ]) {
+            if (!recordsByApplicationId.containsKey(dataRecord.Application__c)) {
+                recordsByApplicationId.put(dataRecord.Application__c, new List<Application_Data__c>());
+            }
+            recordsByApplicationId.get(dataRecord.Application__c).add(dataRecord);
+        }
+        return recordsByApplicationId;
+    }
+
+    public void markApplicationsConverting(List<Application__c> applications) {
+        updateConversionStatus(applications, FrameworkConstants.CONVERSION_STATUS_CONVERTING, false);
+    }
+
+    public void markApplicationsConverted(List<Application__c> applications) {
+        updateConversionStatus(applications, FrameworkConstants.CONVERSION_STATUS_CONVERTED, true);
+    }
+
+    public void markApplicationsConversionFailed(List<Application__c> applications) {
+        updateConversionStatus(applications, FrameworkConstants.CONVERSION_STATUS_FAILED, false);
+    }
+
+    public void saveRecordLinks(List<Application_Record_Link__c> recordLinks) {
+        if (recordLinks == null || recordLinks.isEmpty()) {
+            return;
+        }
+        insert recordLinks;
+    }
+
+    public Map<String, Application_Record_Link__c> getRecordLinksByRuntimeKey(Set<Id> applicationIds) {
+        Map<String, Application_Record_Link__c> linksByRuntimeKey = new Map<String, Application_Record_Link__c>();
+        if (applicationIds == null || applicationIds.isEmpty()) {
+            return linksByRuntimeKey;
+        }
+
+        for (Application_Record_Link__c recordLink : [
+            SELECT Application__c, Conversion_Key__c, Role__c, SObject_Type__c, Record_Id__c
+            FROM Application_Record_Link__c
+            WHERE Application__c IN :applicationIds
+        ]) {
+            linksByRuntimeKey.put(createRecordLinkRuntimeKey(recordLink.Application__c, recordLink.Conversion_Key__c), recordLink);
+        }
+        return linksByRuntimeKey;
+    }
+
+    private void updateConversionStatus(List<Application__c> applications, String status, Boolean converted) {
+        if (applications == null || applications.isEmpty()) {
+            return;
+        }
+
+        List<Application__c> updates = new List<Application__c>();
+        for (Application__c application : applications) {
+            Application__c updateRecord = new Application__c(Id = application.Id);
+            updateRecord.Conversion_Status__c = status;
+            if (converted) {
+                updateRecord.Converted_At__c = System.now();
+            }
+            updates.add(updateRecord);
+        }
+        update updates;
     }
 
     private InitResult createResult(Application__c application, Boolean created) {
@@ -237,6 +344,10 @@ public inherited sharing class ApplicationStateStore {
 
     private String createJobRuntimeKey(Id applicationId, String jobKey) {
         return String.valueOf(applicationId) + '|' + jobKey;
+    }
+
+    private String createRecordLinkRuntimeKey(Id applicationId, String conversionKey) {
+        return String.valueOf(applicationId) + '|' + conversionKey;
     }
 
     private void assignValue(Application_Data__c dataRecord, Object value) {

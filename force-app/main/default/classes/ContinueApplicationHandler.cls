@@ -4,6 +4,8 @@ public inherited sharing class ContinueApplicationHandler {
     private ApplicationEventStore eventStore;
     private SnapshotBuilder snapshotBuilder;
     private RuleEngine ruleEngine;
+    private StepNavigator stepNavigator;
+    private ConsumerAccessService consumerAccessService;
 
     public ContinueApplicationHandler() {
         this(
@@ -28,6 +30,8 @@ public inherited sharing class ContinueApplicationHandler {
         this.eventStore = eventStore;
         this.snapshotBuilder = snapshotBuilder;
         this.ruleEngine = ruleEngine;
+        this.stepNavigator = new StepNavigator(ruleEngine);
+        this.consumerAccessService = new ConsumerAccessService();
     }
 
     public CommandResult execute(ContinueApplicationCommand command) {
@@ -45,8 +49,44 @@ public inherited sharing class ContinueApplicationHandler {
         String currentStepKey = String.isBlank(command.stepKey)
             ? application.Current_Step_Key__c
             : command.stepKey;
-        String nextStepKey = getNextStepKey(scenario, currentStepKey);
-        StepRuntimeContext context = buildRuntimeContext(command, application, definition, scenario, currentStepKey, nextStepKey);
+        List<Application_Stop_Process__c> activeStopProcesses = stateStore.getActiveStopProcesses(application.Id);
+        List<Application_Job__c> jobs = stateStore.getApplicationJobs(application.Id);
+        String nextStepKey = stepNavigator.getNextTransitionCandidate(
+            application,
+            definition,
+            scenario,
+            currentStepKey,
+            activeStopProcesses,
+            jobs
+        );
+        StepRuntimeContext context = buildRuntimeContext(
+            command,
+            application,
+            definition,
+            scenario,
+            currentStepKey,
+            nextStepKey,
+            activeStopProcesses,
+            jobs
+        );
+
+        RuleResult targetAvailabilityResult = evaluateTargetAvailability(
+            application,
+            definition,
+            scenario,
+            nextStepKey,
+            activeStopProcesses,
+            jobs
+        );
+        if (!targetAvailabilityResult.allowed) {
+            eventStore.createEvent(
+                application.Id,
+                FrameworkConstants.EVENT_TRANSITION_BLOCKED,
+                'Step transition is still blocked.',
+                targetAvailabilityResult
+            );
+            return CommandResult.blocked(buildSnapshot(application, definition), targetAvailabilityResult);
+        }
 
         RuleResult transitionResult = ruleEngine.evaluateStepTransitionRules(context);
         if (!transitionResult.allowed) {
@@ -86,7 +126,9 @@ public inherited sharing class ContinueApplicationHandler {
         ProcessDefinition definition,
         ProcessDefinition.ScenarioDefinition scenario,
         String currentStepKey,
-        String nextStepKey
+        String nextStepKey,
+        List<Application_Stop_Process__c> activeStopProcesses,
+        List<Application_Job__c> jobs
     ) {
         SubmitStepCommand stepCommand = new SubmitStepCommand();
         stepCommand.applicationId = command.applicationId;
@@ -100,10 +142,31 @@ public inherited sharing class ContinueApplicationHandler {
             scenario,
             stepCommand,
             nextStepKey,
-            stateStore.getActiveStopProcesses(application.Id)
+            activeStopProcesses
         );
-        context.setJobs(stateStore.getApplicationJobs(application.Id));
+        context.setJobs(jobs);
         return context;
+    }
+
+    private RuleResult evaluateTargetAvailability(
+        Application__c application,
+        ProcessDefinition definition,
+        ProcessDefinition.ScenarioDefinition scenario,
+        String nextStepKey,
+        List<Application_Stop_Process__c> activeStopProcesses,
+        List<Application_Job__c> jobs
+    ) {
+        if (String.isBlank(nextStepKey)) {
+            return RuleResult.allow();
+        }
+        return stepNavigator.evaluateAvailability(
+            application,
+            definition,
+            scenario,
+            nextStepKey,
+            activeStopProcesses,
+            jobs
+        );
     }
 
     private ApplicationSnapshot buildSnapshot(Application__c application, ProcessDefinition definition) {
@@ -129,24 +192,13 @@ public inherited sharing class ContinueApplicationHandler {
     }
 
     private void validateApplication(ContinueApplicationCommand command, Application__c application) {
-        if (application.Consumer_Key__c != command.consumerKey) {
-            throw new FrameworkException('Consumer is not allowed for Application.');
-        }
+        consumerAccessService.validateApplicationAccess(command.consumerKey, application);
         if (application.Status__c == FrameworkConstants.APPLICATION_STATUS_COMPLETED) {
             throw new FrameworkException('Completed Application cannot continue.');
         }
         if (!String.isBlank(command.stepKey) && application.Current_Step_Key__c != command.stepKey) {
             throw new FrameworkException('Continue step is not current. Current: ' + application.Current_Step_Key__c + ', Submitted: ' + command.stepKey);
         }
-    }
-
-    private String getNextStepKey(ProcessDefinition.ScenarioDefinition scenario, String currentStepKey) {
-        Integer currentIndex = scenario.steps.indexOf(currentStepKey);
-        if (currentIndex < 0) {
-            throw new FrameworkException('Current step is not part of Scenario. Step: ' + currentStepKey);
-        }
-        Integer nextIndex = currentIndex + 1;
-        return nextIndex < scenario.steps.size() ? scenario.steps[nextIndex] : null;
     }
 
     private Boolean isFinishStep(ProcessDefinition definition, String stepKey) {

@@ -2,20 +2,20 @@ public inherited sharing class GetJobStatusHandler {
     private DefinitionResolver definitionResolver;
     private ApplicationStateStore stateStore;
     private SnapshotBuilder snapshotBuilder;
+    private ConsumerAccessService consumerAccessService;
 
     public GetJobStatusHandler() {
         this.definitionResolver = new DefinitionResolver();
         this.stateStore = new ApplicationStateStore();
         this.snapshotBuilder = new SnapshotBuilder();
+        this.consumerAccessService = new ConsumerAccessService();
     }
 
     public CommandResult execute(GetJobStatusCommand command) {
         validateCommand(command);
 
         Application__c application = stateStore.getApplication((Id) command.applicationId);
-        if (application.Consumer_Key__c != command.consumerKey) {
-            throw new FrameworkException('Consumer is not allowed for Application.');
-        }
+        consumerAccessService.validateApplicationAccess(command.consumerKey, application);
 
         Application_Job__c job = stateStore.getApplicationJob(application.Id, command.jobKey);
         ProcessDefinition definition = definitionResolver.resolveActive(application.Process_Key__c);

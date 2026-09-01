@@ -23,6 +23,9 @@ private class GetSnapshotHandlerTest {
         Assert.areEqual('companyDetails', result.snapshot.application.currentStep);
         Assert.areEqual('Alex', result.snapshot.data.get('firstName'));
         Assert.areEqual(Decimal.valueOf(3), result.snapshot.data.get('vehicleCount'));
+        Assert.areEqual(FrameworkConstants.STEP_STATUS_COMPLETED, getStepByKey(result.snapshot.steps, 'contactDetails').status);
+        Assert.areEqual(FrameworkConstants.STEP_STATUS_CURRENT, getStepByKey(result.snapshot.steps, 'companyDetails').status);
+        Assert.areEqual(FrameworkConstants.STEP_STATUS_AVAILABLE, getStepByKey(result.snapshot.steps, 'finish').status);
     }
 
     @IsTest
@@ -96,6 +99,26 @@ private class GetSnapshotHandlerTest {
         assertActions(jobsByKey.get('contactDetails___failedRestartable'), new List<String>{ 'RunJob', 'RestartJob' });
         assertActions(jobsByKey.get('contactDetails___completedSync'), new List<String>());
         assertActions(jobsByKey.get('contactDetails___failedNonRestartable'), new List<String>());
+    }
+
+    @IsTest
+    static void marksUnavailableStepsInSnapshot() {
+        Application__c application = createApplication();
+        ProcessDefinition definition = new DefinitionResolver().resolveActive(application.Process_Key__c);
+
+        ApplicationSnapshot snapshot = new SnapshotBuilder(new LockedCompanyDetailsRuleEngine()).build(
+            application,
+            definition,
+            new List<Application_Data__c>(),
+            new List<Application_Stop_Process__c>(),
+            new List<Application_Job__c>()
+        );
+
+        Assert.areEqual(FrameworkConstants.STEP_STATUS_CURRENT, getStepByKey(snapshot.steps, 'contactDetails').status);
+        Assert.areEqual(FrameworkConstants.STEP_STATUS_LOCKED, getStepByKey(snapshot.steps, 'companyDetails').status);
+        Assert.areEqual('Company details are locked.', getStepByKey(snapshot.steps, 'companyDetails').unavailableReason);
+        Assert.areEqual(FrameworkConstants.STEP_STATUS_LOCKED, getStepByKey(snapshot.steps, 'finish').status);
+        Assert.areEqual('Complete previous steps first.', getStepByKey(snapshot.steps, 'finish').unavailableReason);
     }
 
     @IsTest
@@ -186,6 +209,24 @@ private class GetSnapshotHandlerTest {
         Assert.areEqual(expectedActions.size(), job.availableActions.size());
         for (String expectedAction : expectedActions) {
             Assert.isTrue(job.availableActions.contains(expectedAction), 'Missing Job action: ' + expectedAction);
+        }
+    }
+
+    private static ApplicationSnapshot.StepInfo getStepByKey(List<ApplicationSnapshot.StepInfo> steps, String stepKey) {
+        for (ApplicationSnapshot.StepInfo step : steps) {
+            if (step.key == stepKey) {
+                return step;
+            }
+        }
+        return null;
+    }
+
+    private class LockedCompanyDetailsRuleEngine extends RuleEngine {
+        public override RuleResult evaluateStepAvailability(StepRuntimeContext context) {
+            if (context.currentStepKey == 'companyDetails') {
+                return RuleResult.block(FrameworkConstants.STEP_UNAVAILABLE_LOCKED, 'Company details are locked.');
+            }
+            return RuleResult.allow();
         }
     }
 }

@@ -1,11 +1,11 @@
-public inherited sharing class DefinitionResolver {
+public virtual inherited sharing class DefinitionResolver {
     private DefinitionValidator validator;
 
     public DefinitionResolver() {
         this.validator = new DefinitionValidator();
     }
 
-    public ProcessDefinition resolveActive(String processKey) {
+    public virtual ProcessDefinition resolveActive(String processKey) {
         if (String.isBlank(processKey)) {
             throw new FrameworkException('Process key is required.');
         }

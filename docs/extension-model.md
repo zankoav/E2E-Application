@@ -61,6 +61,10 @@ Example:
 | `MappingTransform` | Convert application data values during Mapping. |
 | `StepHandler` | Add custom step-level behavior when declarative rules are not enough. |
 
+`IntegrationAdapter` should not perform DML or change Application State. It receives `IntegrationRequest` and returns `IntegrationResult`; the caller decides what to persist.
+
+`MappingTransform` should not perform DML or create CRM records. It receives `MappingTransformContext` and returns one target field value.
+
 ## Contract Design
 
 Extension contracts should be small, stable, and global.
@@ -98,4 +102,3 @@ Extensions should not:
 ## Guiding Principle
 
 Extension points should give org developers enough power to build new processes without giving them reasons to modify the core skeleton.
-

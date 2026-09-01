@@ -26,6 +26,17 @@ private class RuleEngineTest {
     }
 
     @IsTest
+    static void defaultStepAvailabilityRuleAllowsStep() {
+        StepRuntimeContext context = createContextWithDefinition(
+            '{"process":{"key":"fuelCardApplication","version":"1.0.0"},"scenarios":{"newCustomer":{"initialStep":"contactDetails","steps":["contactDetails","finish"]}},"steps":{"contactDetails":{"availabilityRules":["contactCanBeShown"]},"finish":{"type":"finish"}},"rules":{"contactCanBeShown":{"type":"stepAvailability"}}}'
+        );
+
+        RuleResult result = new RuleEngine().evaluateStepAvailability(context);
+
+        Assert.areEqual(true, result.allowed);
+    }
+
+    @IsTest
     static void missingRuleDefinitionFailsClearly() {
         String definitionJson = '{"process":{"key":"fuelCardApplication","version":"1.0.0"},"scenarios":{"newCustomer":{"initialStep":"contactDetails","steps":["contactDetails","finish"]}},"steps":{"contactDetails":{"label":"Contact Details","validationRules":["missingRule"]},"finish":{"label":"Finish","type":"finish"}},"rules":{}}';
         ProcessDefinition definition = ProcessDefinition.parse(definitionJson);

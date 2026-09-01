@@ -3,12 +3,14 @@ public inherited sharing class InitApplicationHandler {
     private ApplicationStateStore stateStore;
     private ApplicationEventStore eventStore;
     private SnapshotBuilder snapshotBuilder;
+    private ConsumerAccessService consumerAccessService;
 
     public InitApplicationHandler() {
         this.definitionResolver = new DefinitionResolver();
         this.stateStore = new ApplicationStateStore();
         this.eventStore = new ApplicationEventStore();
         this.snapshotBuilder = new SnapshotBuilder();
+        this.consumerAccessService = new ConsumerAccessService();
     }
 
     public CommandResult execute(InitApplicationCommand command) {
@@ -16,7 +18,7 @@ public inherited sharing class InitApplicationHandler {
 
         ProcessDefinition definition = definitionResolver.resolveActive(command.processKey);
         ProcessDefinition.ScenarioDefinition scenario = definition.getScenario(command.scenarioKey);
-        validateConsumer(command, scenario);
+        consumerAccessService.validateInitAccess(command.consumerKey, command.processKey, command.scenarioKey, scenario);
 
         ApplicationStateStore.InitResult initResult = stateStore.initApplication(command, definition);
         Application__c application = initResult.application;
@@ -61,12 +63,4 @@ public inherited sharing class InitApplicationHandler {
         }
     }
 
-    private void validateConsumer(InitApplicationCommand command, ProcessDefinition.ScenarioDefinition scenario) {
-        if (scenario == null) {
-            throw new FrameworkException('Scenario was not found. Scenario: ' + command.scenarioKey);
-        }
-        if (!scenario.consumerKeys.isEmpty() && !scenario.consumerKeys.contains(command.consumerKey)) {
-            throw new FrameworkException('Consumer is not allowed for scenario. Consumer: ' + command.consumerKey + ', Scenario: ' + command.scenarioKey);
-        }
-    }
 }

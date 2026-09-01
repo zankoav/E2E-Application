@@ -19,6 +19,26 @@ REST endpoints are only controllers. Runtime flow describes the application-leve
 | Conversion Engine | Convert completed Applications into CRM records. |
 | Snapshot Builder | Build API Snapshot from State and selected Definitions. |
 
+## Definition Validation
+
+Definition Resolver validates Process Definition before command handlers execute runtime behavior.
+
+It checks that scenarios, steps, rules, job trigger rules, job definitions, and job execution modes are internally consistent.
+
+Runtime handlers should work with already validated definitions, so configuration mistakes fail before state-changing business flow starts.
+
+## Consumer Access
+
+Every API command belongs to a trusted Consumer.
+
+Consumer access is checked by the backend, not inferred by the frontend:
+
+- `InitApplication` checks active Consumer Definition, allowed process, allowed scenario, and optional scenario `consumerKeys`.
+- Commands for an existing Application check that the request consumer owns that Application.
+- Existing Application commands also check that the Consumer still has access to the Application's process and scenario.
+
+This keeps API access rules centralized and makes future web, mobile, partner, or internal consumers use the same backend boundary.
+
 ## InitApplication Flow
 
 ```text
@@ -69,10 +89,12 @@ API request
   -> SubmitStep Command Handler
   -> load Application State
   -> resolve current Step Definition
+  -> resolve next transition candidate through Step Availability Rules
   -> evaluate Validation Rules
   -> persist accepted State changes
   -> evaluate Job Trigger Rules
   -> create/update Job instances
+  -> evaluate target Step Availability
   -> evaluate Step Transition Rules
   -> evaluate Finish Rule if target is final state
   -> build Snapshot
@@ -101,6 +123,8 @@ API request
   -> load Application State
   -> resolve current Step Definition
   -> load active Jobs and Stop Processes
+  -> resolve next transition candidate through Step Availability Rules
+  -> evaluate target Step Availability
   -> evaluate Step Transition Rules
   -> move Application if transition is allowed
   -> build Snapshot
@@ -135,6 +159,30 @@ Strict Stop Process policy:
 active Stop Processes block transition by default
 only explicitly allowed stop process codes can pass
 ```
+
+## Step Availability Flow
+
+Step Availability Rules decide how a Step appears in Snapshot and whether it can be selected as the next transition candidate.
+
+Snapshot step statuses:
+
+| Status | Meaning |
+| --- | --- |
+| `Current` | Application is currently on this Step. |
+| `Completed` | Step is before the current Step in the Scenario. |
+| `Available` | Step is the next enterable Step. |
+| `Locked` | Step is visible but cannot be entered yet. |
+| `Skipped` | Step does not apply to this Application State. |
+| `Hidden` | Step should not be shown to the Consumer. |
+
+Navigation rule:
+
+```text
+Hidden and Skipped steps are skipped while resolving the next transition candidate.
+Locked steps are not skipped; they block transition until their availability rule allows entry.
+```
+
+This keeps UI Snapshot and backend transition behavior aligned.
 
 ## Job Flow
 
@@ -228,6 +276,8 @@ The Consumer should not call `SubmitStep` again only to retry the transition, be
 
 ```text
 JobExecutor or Conversion Engine
+  -> IntegrationService
+  -> IntegrationDefinitionResolver
   -> IntegrationAdapter
   -> external callout or Salesforce read
   -> normalized IntegrationResult
@@ -235,6 +285,14 @@ JobExecutor or Conversion Engine
 ```
 
 Integrations should not perform DML, change Application State, or own process transitions.
+
+Integration Definition can come from:
+
+- process `integrations` JSON
+- `Integration_Definition__mdt`
+- metadata definition plus process-level overrides
+
+The caller owns any state change after reading `IntegrationResult`.
 
 ## Finish Flow
 
@@ -257,14 +315,60 @@ After finish, Application State should be treated as immutable except for conver
 Completed Applications
   -> ConvertApplications Command Handler
   -> resolve Mapping Definitions
+  -> update Conversion Status to Converting
   -> build target SObjects
-  -> execute bulk DML
+  -> apply optional Mapping Transforms
+  -> execute bulk DML by dependency batch
   -> create Application_Record_Link__c records
-  -> update Conversion Status
+  -> update Conversion Status to Converted or Failed
   -> create Conversion events
 ```
 
 Conversion is usually system/admin driven and should support bulk processing.
+
+Initial conversion lifecycle:
+
+```text
+Ready
+  -> Converting
+  -> Converted or Failed
+```
+
+When Application enters the final state, `Conversion_Status__c` becomes `Ready`.
+
+Failed Applications are not retried by the default conversion command.
+
+To retry them, the caller must explicitly send `retryFailed = true`.
+
+The initial Mapping Engine supports `insert`, `upsert`, and field-level transforms.
+
+`upsert` uses Mapping `match.field` and `match.source` to find an existing CRM record before deciding between update and insert.
+
+This is framework-controlled match behavior, not Salesforce native External Id upsert.
+
+Match lookup is grouped by target object and match field so one conversion batch does not run one SOQL query per Application.
+
+Mapping dependencies are executed in batches.
+
+For example, Account mappings are saved first, then Contact mappings can use `fromRecord = account` to receive the saved Account Id in `Contact.AccountId`.
+
+Conversion DML uses partial success handling.
+
+If one mapped CRM record fails to save, only the owning Application is marked `Failed`; other Applications in the same conversion batch can still become `Converted`.
+
+Conversion retry uses `Application_Record_Link__c` as the idempotency boundary.
+
+If an earlier conversion attempt created or updated one mapped CRM record and then another mapped record failed, the retry reuses the existing link. The linked CRM record is updated instead of inserting another record for the same Application and Mapping key.
+
+Mapping Transform is field-level:
+
+```text
+source value
+  -> MappingTransform
+  -> target field value
+```
+
+Transform classes should not perform DML. They should only return a value for the current target field.
 
 ## Guiding Principle
 

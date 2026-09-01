@@ -3,6 +3,7 @@ public inherited sharing class RestartJobHandler {
     private ApplicationStateStore stateStore;
     private ApplicationEventStore eventStore;
     private SnapshotBuilder snapshotBuilder;
+    private ConsumerAccessService consumerAccessService;
 
     public RestartJobHandler() {
         this(
@@ -24,6 +25,7 @@ public inherited sharing class RestartJobHandler {
         this.stateStore = stateStore;
         this.eventStore = eventStore;
         this.snapshotBuilder = snapshotBuilder;
+        this.consumerAccessService = new ConsumerAccessService();
     }
 
     public CommandResult execute(RestartJobCommand command) {
@@ -68,9 +70,7 @@ public inherited sharing class RestartJobHandler {
     }
 
     private void validateApplication(RestartJobCommand command, Application__c application) {
-        if (application.Consumer_Key__c != command.consumerKey) {
-            throw new FrameworkException('Consumer is not allowed for Application.');
-        }
+        consumerAccessService.validateApplicationAccess(command.consumerKey, application);
         if (application.Status__c == FrameworkConstants.APPLICATION_STATUS_COMPLETED) {
             throw new FrameworkException('Completed Application Job cannot be restarted.');
         }

@@ -6,6 +6,10 @@ API Commands describe actions that trusted Consumers can request from the E2E Ap
 
 REST endpoints are transport. Commands are the application-level meaning.
 
+Every command requires `consumerKey`.
+
+The backend validates Consumer access through `Consumer_Definition__mdt` and Application ownership. A frontend should not decide whether a Consumer is trusted.
+
 ## Initial Commands
 
 | Command | Purpose |
@@ -168,6 +172,38 @@ Responsibilities:
 - create Application Record Links
 - update conversion status
 - return conversion result
+
+Initial REST endpoint:
+
+```text
+POST /services/apexrest/e2e/applications/convert
+```
+
+Initial request shape:
+
+```json
+{
+  "consumerKey": "webPortal",
+  "processKey": "fuelCardApplication",
+  "applicationIds": ["a00000000000001AAA"],
+  "maxBatchSize": 50,
+  "retryFailed": false
+}
+```
+
+`applicationIds` is optional. Without it, the command converts ready Applications for the requested process up to `maxBatchSize`.
+
+`retryFailed` is optional and defaults to `false`.
+
+When `retryFailed` is `false`, Conversion selects only Applications with `Conversion_Status__c = Ready`.
+
+When `retryFailed` is `true`, Conversion can also select Applications with `Conversion_Status__c = Failed`.
+
+Conversion result can contain both converted and failed Applications from the same batch.
+
+Conversion is idempotent through `Application_Record_Link__c`.
+
+If a retry finds an existing link for the same Application and Mapping key, it updates the linked CRM record instead of creating a duplicate.
 
 Conversion is usually system/admin driven, not a normal frontend action.
 

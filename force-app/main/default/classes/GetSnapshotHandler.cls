@@ -2,20 +2,20 @@ public inherited sharing class GetSnapshotHandler {
     private DefinitionResolver definitionResolver;
     private ApplicationStateStore stateStore;
     private SnapshotBuilder snapshotBuilder;
+    private ConsumerAccessService consumerAccessService;
 
     public GetSnapshotHandler() {
         this.definitionResolver = new DefinitionResolver();
         this.stateStore = new ApplicationStateStore();
         this.snapshotBuilder = new SnapshotBuilder();
+        this.consumerAccessService = new ConsumerAccessService();
     }
 
     public CommandResult execute(GetSnapshotCommand command) {
         validateCommand(command);
 
         Application__c application = stateStore.getApplication((Id) command.applicationId);
-        if (application.Consumer_Key__c != command.consumerKey) {
-            throw new FrameworkException('Consumer is not allowed for Application.');
-        }
+        consumerAccessService.validateApplicationAccess(command.consumerKey, application);
 
         ProcessDefinition definition = definitionResolver.resolveActive(application.Process_Key__c);
         ApplicationSnapshot snapshot = snapshotBuilder.build(

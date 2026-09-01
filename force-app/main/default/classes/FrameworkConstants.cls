@@ -2,8 +2,15 @@ public class FrameworkConstants {
     public static final String APPLICATION_STATUS_IN_PROGRESS = 'InProgress';
     public static final String APPLICATION_STATUS_COMPLETED = 'Completed';
     public static final String CONVERSION_STATUS_NOT_READY = 'NotReady';
+    public static final String CONVERSION_STATUS_READY = 'Ready';
+    public static final String CONVERSION_STATUS_CONVERTING = 'Converting';
+    public static final String CONVERSION_STATUS_CONVERTED = 'Converted';
+    public static final String CONVERSION_STATUS_FAILED = 'Failed';
     public static final String EVENT_APPLICATION_INITIALIZED = 'ApplicationInitialized';
     public static final String EVENT_APPLICATION_FINISHED = 'ApplicationFinished';
+    public static final String EVENT_CONVERSION_COMPLETED = 'ConversionCompleted';
+    public static final String EVENT_CONVERSION_FAILED = 'ConversionFailed';
+    public static final String EVENT_CONVERSION_STARTED = 'ConversionStarted';
     public static final String EVENT_JOB_QUEUED = 'JobQueued';
     public static final String EVENT_JOB_PREPARED = 'JobPrepared';
     public static final String EVENT_JOB_RESTARTED = 'JobRestarted';
@@ -26,4 +33,13 @@ public class FrameworkConstants {
     public static final String JOB_EXECUTION_MODE_ASYNC = 'async';
     public static final String STOP_PROCESS_STATUS_ACTIVE = 'Active';
     public static final String STOP_PROCESS_STATUS_RESOLVED = 'Resolved';
+    public static final String STEP_STATUS_AVAILABLE = 'Available';
+    public static final String STEP_STATUS_COMPLETED = 'Completed';
+    public static final String STEP_STATUS_CURRENT = 'Current';
+    public static final String STEP_STATUS_HIDDEN = 'Hidden';
+    public static final String STEP_STATUS_LOCKED = 'Locked';
+    public static final String STEP_STATUS_SKIPPED = 'Skipped';
+    public static final String STEP_UNAVAILABLE_HIDDEN = 'HIDDEN';
+    public static final String STEP_UNAVAILABLE_LOCKED = 'LOCKED';
+    public static final String STEP_UNAVAILABLE_SKIPPED = 'SKIPPED';
 }

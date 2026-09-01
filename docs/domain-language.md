@@ -30,6 +30,8 @@ A step defines what data is expected, what validations can run, what jobs can be
 
 A step can be required, optional, or conditional. Conditional steps are included in the process only when their conditions match the current application state.
 
+Step availability is backend truth. Snapshot can mark steps as `Current`, `Completed`, `Available`, `Locked`, `Skipped`, or `Hidden`.
+
 ## Command
 
 An action requested through the API.

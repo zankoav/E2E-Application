@@ -37,6 +37,17 @@ public virtual class RuleEngine {
         return RuleResult.allow();
     }
 
+    public virtual RuleResult evaluateStepAvailability(StepRuntimeContext context) {
+        for (String ruleKey : getStepRuleKeys(context, 'availabilityRules')) {
+            Map<String, Object> ruleDefinition = getRuleDefinition(context.definition, ruleKey);
+            RuleResult result = createStepAvailabilityRule(ruleDefinition).isAvailable(context, ruleDefinition);
+            if (!result.allowed) {
+                return result;
+            }
+        }
+        return RuleResult.allow();
+    }
+
     private RuleResult evaluateJobDependencies(StepRuntimeContext context) {
         for (String ruleKey : getStepRuleKeys(context, 'transitionRules')) {
             Map<String, Object> ruleDefinition = getRuleDefinition(context.definition, ruleKey);
@@ -131,6 +142,24 @@ public virtual class RuleEngine {
             throw new FrameworkException('Rule class must implement StepTransitionRule. Class: ' + className);
         }
         return (StepTransitionRule) ruleInstance;
+    }
+
+    private StepAvailabilityRule createStepAvailabilityRule(Map<String, Object> ruleDefinition) {
+        String className = getString(ruleDefinition, 'class');
+        if (String.isBlank(className)) {
+            return new DefaultStepAvailabilityRule();
+        }
+
+        Type ruleType = Type.forName(className);
+        if (ruleType == null) {
+            throw new FrameworkException('Step Availability Rule class was not found. Class: ' + className);
+        }
+
+        Object ruleInstance = ruleType.newInstance();
+        if (!(ruleInstance instanceof StepAvailabilityRule)) {
+            throw new FrameworkException('Rule class must implement StepAvailabilityRule. Class: ' + className);
+        }
+        return (StepAvailabilityRule) ruleInstance;
     }
 
     private List<String> getStepRuleKeys(StepRuntimeContext context, String ruleListKey) {

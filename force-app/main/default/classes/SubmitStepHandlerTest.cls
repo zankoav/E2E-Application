@@ -205,6 +205,35 @@ private class SubmitStepHandlerTest {
     }
 
     @IsTest
+    static void submitSkipsHiddenNextStep() {
+        Application__c application = createApplication();
+        SubmitStepCommand command = createSubmitCommand(application.Id, 'contactDetails');
+        command.data.put('firstName', 'Alex');
+
+        CommandResult result = createHandler(new HiddenCompanyDetailsRuleEngine()).execute(command);
+
+        Assert.areEqual(true, result.success);
+        Assert.areEqual(FrameworkConstants.APPLICATION_STATUS_COMPLETED, result.snapshot.application.status);
+        Assert.areEqual('finish', result.snapshot.application.currentStep);
+        Assert.areEqual('Alex', getDataByKey(application.Id).get('firstName').Value__c);
+    }
+
+    @IsTest
+    static void submitDoesNotEnterLockedNextStep() {
+        Application__c application = createApplication();
+        SubmitStepCommand command = createSubmitCommand(application.Id, 'contactDetails');
+        command.data.put('firstName', 'Alex');
+
+        CommandResult result = createHandler(new LockedCompanyDetailsRuleEngine()).execute(command);
+
+        Assert.areEqual(false, result.success);
+        Assert.areEqual('Company details are locked.', result.errors[0]);
+        Assert.areEqual('contactDetails', getApplication(application.Id).Current_Step_Key__c);
+        Assert.areEqual('Alex', getDataByKey(application.Id).get('firstName').Value__c);
+        Assert.areEqual(FrameworkConstants.STEP_STATUS_LOCKED, getStepByKey(result.snapshot.steps, 'companyDetails').status);
+    }
+
+    @IsTest
     static void restControllerSubmitsStep() {
         Application__c application = createApplication();
         RestContext.request = createSubmitRequest(application.Id, 'contactDetails');
@@ -269,6 +298,15 @@ private class SubmitStepHandlerTest {
         ];
     }
 
+    private static Application__c getApplication(Id applicationId) {
+        return [
+            SELECT Id, Current_Step_Key__c, Status__c
+            FROM Application__c
+            WHERE Id = :applicationId
+            LIMIT 1
+        ];
+    }
+
     private static SubmitStepCommand createSubmitCommand(Id applicationId, String stepKey) {
         SubmitStepCommand command = new SubmitStepCommand();
         command.applicationId = String.valueOf(applicationId);
@@ -321,10 +359,19 @@ private class SubmitStepHandlerTest {
             new DefinitionResolver(),
             new ApplicationStateStore(),
             new ApplicationEventStore(),
-            new SnapshotBuilder(),
+            new SnapshotBuilder(ruleEngine),
             ruleEngine,
             jobEngine
         );
+    }
+
+    private static ApplicationSnapshot.StepInfo getStepByKey(List<ApplicationSnapshot.StepInfo> steps, String stepKey) {
+        for (ApplicationSnapshot.StepInfo step : steps) {
+            if (step.key == stepKey) {
+                return step;
+            }
+        }
+        return null;
     }
 
     private class BlockingValidationRuleEngine extends RuleEngine {
@@ -366,6 +413,24 @@ private class SubmitStepHandlerTest {
                 'WAITING_FOR_JOBS',
                 'Required Job is not completed. Job: contactDetails___emailValidation'
             );
+        }
+    }
+
+    private class HiddenCompanyDetailsRuleEngine extends RuleEngine {
+        public override RuleResult evaluateStepAvailability(StepRuntimeContext context) {
+            if (context.currentStepKey == 'companyDetails') {
+                return RuleResult.block(FrameworkConstants.STEP_UNAVAILABLE_HIDDEN, 'Company details are hidden.');
+            }
+            return RuleResult.allow();
+        }
+    }
+
+    private class LockedCompanyDetailsRuleEngine extends RuleEngine {
+        public override RuleResult evaluateStepAvailability(StepRuntimeContext context) {
+            if (context.currentStepKey == 'companyDetails') {
+                return RuleResult.block(FrameworkConstants.STEP_UNAVAILABLE_LOCKED, 'Company details are locked.');
+            }
+            return RuleResult.allow();
         }
     }
 }

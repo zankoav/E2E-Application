@@ -1,4 +1,14 @@
 public inherited sharing class SnapshotBuilder {
+    private StepNavigator stepNavigator;
+
+    public SnapshotBuilder() {
+        this(new RuleEngine());
+    }
+
+    public SnapshotBuilder(RuleEngine ruleEngine) {
+        this.stepNavigator = new StepNavigator(ruleEngine);
+    }
+
     public ApplicationSnapshot build(Application__c application, ProcessDefinition definition) {
         return build(application, definition, new List<Application_Data__c>(), new List<Application_Stop_Process__c>(), new List<Application_Job__c>());
     }
@@ -32,7 +42,7 @@ public inherited sharing class SnapshotBuilder {
 
         ApplicationSnapshot snapshot = new ApplicationSnapshot();
         snapshot.application = buildApplicationInfo(application);
-        snapshot.steps = buildSteps(application, definition);
+        snapshot.steps = buildSteps(application, definition, stopProcesses, jobs);
         snapshot.data = buildData(dataRecords);
         snapshot.jobs = buildJobs(jobs, definition);
         snapshot.stopProcesses = buildStopProcesses(stopProcesses);
@@ -61,22 +71,91 @@ public inherited sharing class SnapshotBuilder {
         return info;
     }
 
-    private List<ApplicationSnapshot.StepInfo> buildSteps(Application__c application, ProcessDefinition definition) {
+    private List<ApplicationSnapshot.StepInfo> buildSteps(
+        Application__c application,
+        ProcessDefinition definition,
+        List<Application_Stop_Process__c> stopProcesses,
+        List<Application_Job__c> jobs
+    ) {
         List<ApplicationSnapshot.StepInfo> steps = new List<ApplicationSnapshot.StepInfo>();
         ProcessDefinition.ScenarioDefinition scenario = definition.getScenario(application.Scenario_Key__c);
         if (scenario == null) {
             return steps;
         }
 
+        Integer currentIndex = scenario.steps.indexOf(application.Current_Step_Key__c);
+        String nextStepKey = stepNavigator.getNextTransitionCandidate(application, definition, scenario, application.Current_Step_Key__c, stopProcesses, jobs);
         for (String stepKey : scenario.steps) {
             ApplicationSnapshot.StepInfo stepInfo = new ApplicationSnapshot.StepInfo();
             stepInfo.key = stepKey;
             stepInfo.label = getStepLabel(definition, stepKey);
-            stepInfo.status = stepKey == application.Current_Step_Key__c ? 'Current' : 'Available';
-            stepInfo.available = true;
+            assignStepAvailability(stepInfo, application, definition, scenario, stepKey, currentIndex, nextStepKey, stopProcesses, jobs);
             steps.add(stepInfo);
         }
         return steps;
+    }
+
+    private void assignStepAvailability(
+        ApplicationSnapshot.StepInfo stepInfo,
+        Application__c application,
+        ProcessDefinition definition,
+        ProcessDefinition.ScenarioDefinition scenario,
+        String stepKey,
+        Integer currentIndex,
+        String nextStepKey,
+        List<Application_Stop_Process__c> stopProcesses,
+        List<Application_Job__c> jobs
+    ) {
+        if (stepKey == application.Current_Step_Key__c) {
+            stepInfo.status = FrameworkConstants.STEP_STATUS_CURRENT;
+            stepInfo.available = true;
+            return;
+        }
+
+        Integer stepIndex = scenario.steps.indexOf(stepKey);
+        if (currentIndex >= 0 && stepIndex >= 0 && stepIndex < currentIndex) {
+            stepInfo.status = FrameworkConstants.STEP_STATUS_COMPLETED;
+            stepInfo.available = true;
+            return;
+        }
+
+        RuleResult availabilityResult = stepNavigator.evaluateAvailability(
+            application,
+            definition,
+            scenario,
+            stepKey,
+            stopProcesses,
+            jobs
+        );
+        if (!availabilityResult.allowed) {
+            stepInfo.status = getUnavailableStepStatus(availabilityResult);
+            stepInfo.available = false;
+            stepInfo.unavailableReason = availabilityResult.message;
+            return;
+        }
+
+        if (stepKey != nextStepKey) {
+            stepInfo.status = FrameworkConstants.STEP_STATUS_LOCKED;
+            stepInfo.available = false;
+            stepInfo.unavailableReason = 'Complete previous steps first.';
+            return;
+        }
+
+        if (availabilityResult.allowed) {
+            stepInfo.status = FrameworkConstants.STEP_STATUS_AVAILABLE;
+            stepInfo.available = true;
+            return;
+        }
+    }
+
+    private String getUnavailableStepStatus(RuleResult availabilityResult) {
+        if (availabilityResult.code == FrameworkConstants.STEP_UNAVAILABLE_HIDDEN) {
+            return FrameworkConstants.STEP_STATUS_HIDDEN;
+        }
+        if (availabilityResult.code == FrameworkConstants.STEP_UNAVAILABLE_SKIPPED) {
+            return FrameworkConstants.STEP_STATUS_SKIPPED;
+        }
+        return FrameworkConstants.STEP_STATUS_LOCKED;
     }
 
     private Map<String, Object> buildData(List<Application_Data__c> dataRecords) {

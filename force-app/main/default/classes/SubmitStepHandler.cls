@@ -5,6 +5,8 @@ public inherited sharing class SubmitStepHandler {
     private SnapshotBuilder snapshotBuilder;
     private RuleEngine ruleEngine;
     private JobEngine jobEngine;
+    private StepNavigator stepNavigator;
+    private ConsumerAccessService consumerAccessService;
 
     public SubmitStepHandler() {
         this(
@@ -32,6 +34,8 @@ public inherited sharing class SubmitStepHandler {
         this.snapshotBuilder = snapshotBuilder;
         this.ruleEngine = ruleEngine;
         this.jobEngine = jobEngine;
+        this.stepNavigator = new StepNavigator(ruleEngine);
+        this.consumerAccessService = new ConsumerAccessService();
     }
 
     public CommandResult execute(SubmitStepCommand command) {
@@ -46,8 +50,16 @@ public inherited sharing class SubmitStepHandler {
             throw new FrameworkException('Scenario was not found. Scenario: ' + application.Scenario_Key__c);
         }
 
-        String nextStepKey = getNextStepKey(scenario, command.stepKey);
         List<Application_Stop_Process__c> activeStopProcesses = stateStore.getActiveStopProcesses(application.Id);
+        List<Application_Job__c> currentJobs = stateStore.getApplicationJobs(application.Id);
+        String nextStepKey = stepNavigator.getNextTransitionCandidate(
+            application,
+            definition,
+            scenario,
+            command.stepKey,
+            activeStopProcesses,
+            currentJobs
+        );
         StepRuntimeContext context = new StepRuntimeContext(application, definition, scenario, command, nextStepKey, activeStopProcesses);
 
         RuleResult validationResult = ruleEngine.evaluateValidationRules(context);
@@ -66,6 +78,18 @@ public inherited sharing class SubmitStepHandler {
                 'Job queued.',
                 queuedJob
             );
+        }
+
+        RuleResult targetAvailabilityResult = evaluateTargetAvailability(
+            application,
+            definition,
+            scenario,
+            nextStepKey,
+            activeStopProcesses,
+            context.jobs
+        );
+        if (!targetAvailabilityResult.allowed) {
+            return CommandResult.blocked(buildSnapshot(application, definition), targetAvailabilityResult);
         }
 
         RuleResult transitionResult = ruleEngine.evaluateStepTransitionRules(context);
@@ -102,6 +126,27 @@ public inherited sharing class SubmitStepHandler {
         return CommandResult.ok(snapshot);
     }
 
+    private RuleResult evaluateTargetAvailability(
+        Application__c application,
+        ProcessDefinition definition,
+        ProcessDefinition.ScenarioDefinition scenario,
+        String nextStepKey,
+        List<Application_Stop_Process__c> activeStopProcesses,
+        List<Application_Job__c> jobs
+    ) {
+        if (String.isBlank(nextStepKey)) {
+            return RuleResult.allow();
+        }
+        return stepNavigator.evaluateAvailability(
+            application,
+            definition,
+            scenario,
+            nextStepKey,
+            activeStopProcesses,
+            jobs
+        );
+    }
+
     private ApplicationSnapshot buildSnapshot(Application__c application, ProcessDefinition definition) {
         return snapshotBuilder.build(
             application,
@@ -128,24 +173,13 @@ public inherited sharing class SubmitStepHandler {
     }
 
     private void validateApplication(SubmitStepCommand command, Application__c application) {
-        if (application.Consumer_Key__c != command.consumerKey) {
-            throw new FrameworkException('Consumer is not allowed for Application.');
-        }
+        consumerAccessService.validateApplicationAccess(command.consumerKey, application);
         if (application.Status__c == FrameworkConstants.APPLICATION_STATUS_COMPLETED) {
             throw new FrameworkException('Completed Application cannot be changed.');
         }
         if (application.Current_Step_Key__c != command.stepKey) {
             throw new FrameworkException('Submitted step is not current. Current: ' + application.Current_Step_Key__c + ', Submitted: ' + command.stepKey);
         }
-    }
-
-    private String getNextStepKey(ProcessDefinition.ScenarioDefinition scenario, String currentStepKey) {
-        Integer currentIndex = scenario.steps.indexOf(currentStepKey);
-        if (currentIndex < 0) {
-            throw new FrameworkException('Current step is not part of Scenario. Step: ' + currentStepKey);
-        }
-        Integer nextIndex = currentIndex + 1;
-        return nextIndex < scenario.steps.size() ? scenario.steps[nextIndex] : null;
     }
 
     private Boolean isFinishStep(ProcessDefinition definition, String stepKey) {

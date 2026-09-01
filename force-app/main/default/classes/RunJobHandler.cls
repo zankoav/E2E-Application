@@ -4,6 +4,7 @@ public inherited sharing class RunJobHandler {
     private ApplicationEventStore eventStore;
     private SnapshotBuilder snapshotBuilder;
     private JobEngine jobEngine;
+    private ConsumerAccessService consumerAccessService;
 
     public RunJobHandler() {
         this(
@@ -28,6 +29,7 @@ public inherited sharing class RunJobHandler {
         this.eventStore = eventStore;
         this.snapshotBuilder = snapshotBuilder;
         this.jobEngine = jobEngine;
+        this.consumerAccessService = new ConsumerAccessService();
     }
 
     public CommandResult execute(RunJobCommand command) {
@@ -136,9 +138,7 @@ public inherited sharing class RunJobHandler {
     }
 
     private void validateApplication(RunJobCommand command, Application__c application) {
-        if (application.Consumer_Key__c != command.consumerKey) {
-            throw new FrameworkException('Consumer is not allowed for Application.');
-        }
+        consumerAccessService.validateApplicationAccess(command.consumerKey, application);
         if (application.Status__c == FrameworkConstants.APPLICATION_STATUS_COMPLETED) {
             throw new FrameworkException('Completed Application Job cannot be changed.');
         }
