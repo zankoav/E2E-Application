@@ -4,6 +4,7 @@
     "tests": [
       "ProcessDefinitionTest",
       "ConsumerAccessServiceTest",
+      "ErrorInfoMapperTest",
       "IntegrationServiceTest",
       "ConvertApplicationsHandlerTest",
       "ApplicationLifecycleGuardTest",
@@ -38,6 +39,28 @@
       ],
       "tests": [
         "ConsumerAccessServiceTest",
+        "InitApplicationHandlerTest",
+        "SubmitStepHandlerTest",
+        "GetSnapshotHandlerTest",
+        "GetJobStatusHandlerTest",
+        "RunJobHandlerTest",
+        "ContinueApplicationHandlerTest",
+        "RestartJobHandlerTest",
+        "ConvertApplicationsHandlerTest"
+      ]
+    },
+    "api": {
+      "paths": [
+        "force-app/main/default/classes/Application*RestController.cls",
+        "force-app/main/default/classes/CommandResult.cls",
+        "force-app/main/default/classes/ErrorInfo*.cls",
+        "force-app/main/default/classes/FrameworkErrorCodes.cls",
+        "force-app/main/default/classes/E2ERestResponseWriter.cls",
+        "docs/rest-api-contract.md",
+        "docs/error-model.md"
+      ],
+      "tests": [
+        "ErrorInfoMapperTest",
         "InitApplicationHandlerTest",
         "SubmitStepHandlerTest",
         "GetSnapshotHandlerTest",

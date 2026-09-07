@@ -21,6 +21,7 @@ The framework provides a strict runtime skeleton for:
 - `docs/runtime-flow.md`
 - `docs/api-commands.md`
 - `docs/rest-api-contract.md`
+- `docs/error-model.md`
 - `docs/extension-model.md`
 - `docs/extension-contracts.md`
 - `docs/admin-guide.md`
@@ -28,6 +29,7 @@ The framework provides a strict runtime skeleton for:
 - `docs/package-strategy.md`
 - `docs/package-readiness.md`
 - `docs/package-creation-plan.md`
+- `docs/release-checklist.md`
 - `docs/examples/README.md`
 
 ## Validation

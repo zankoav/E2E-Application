@@ -9,7 +9,7 @@ global with sharing class ApplicationContinueRestController {
             ContinueApplicationCommand command = ContinueApplicationCommand.fromJson(requestBody);
             E2ERestResponseWriter.writeResponse(200, new ContinueApplicationHandler().execute(command));
         } catch (Exception ex) {
-            E2ERestResponseWriter.writeResponse(400, CommandResult.fail(ex.getMessage()));
+            E2ERestResponseWriter.writeResponse(400, CommandResult.fail(ex));
         }
     }
 }

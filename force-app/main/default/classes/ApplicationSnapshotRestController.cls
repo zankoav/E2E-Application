@@ -9,7 +9,7 @@ global with sharing class ApplicationSnapshotRestController {
             GetSnapshotCommand command = GetSnapshotCommand.fromJson(requestBody);
             E2ERestResponseWriter.writeResponse(200, new GetSnapshotHandler().execute(command));
         } catch (Exception ex) {
-            E2ERestResponseWriter.writeResponse(400, CommandResult.fail(ex.getMessage()));
+            E2ERestResponseWriter.writeResponse(400, CommandResult.fail(ex));
         }
     }
 }

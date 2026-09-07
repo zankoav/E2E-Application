@@ -98,6 +98,7 @@ private class InitApplicationHandlerTest {
         Map<String, Object> responseBody = (Map<String, Object>) JSON.deserializeUntyped(RestContext.response.responseBody.toString());
         Assert.areEqual(false, responseBody.get('success'));
         Assert.isNotNull(responseBody.get('errors'));
+        Assert.isNotNull(responseBody.get('errorDetails'));
     }
 
     @IsTest
@@ -107,6 +108,9 @@ private class InitApplicationHandlerTest {
         Assert.areEqual(false, result.success);
         Assert.areEqual(1, result.errors.size());
         Assert.areEqual('Something failed.', result.errors[0]);
+        Assert.areEqual(1, result.errorDetails.size());
+        Assert.areEqual(FrameworkErrorCodes.UNKNOWN_ERROR, result.errorDetails[0].code);
+        Assert.areEqual('Something failed.', result.errorDetails[0].message);
     }
 
     private static RestRequest createInitRequest(String externalReference) {

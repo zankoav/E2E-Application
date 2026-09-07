@@ -9,7 +9,7 @@ global with sharing class ApplicationConvertRestController {
             ConvertApplicationsCommand command = ConvertApplicationsCommand.fromJson(requestBody);
             E2ERestResponseWriter.writeResponse(200, new ConvertApplicationsHandler().execute(command));
         } catch (Exception ex) {
-            E2ERestResponseWriter.writeResponse(400, CommandResult.fail(ex.getMessage()));
+            E2ERestResponseWriter.writeResponse(400, CommandResult.fail(ex));
         }
     }
 }

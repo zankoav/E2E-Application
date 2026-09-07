@@ -17,10 +17,6 @@
         <enabled>true</enabled>
     </classAccesses>
     <classAccesses>
-        <apexClass>ApplicationLifecycleGuard</apexClass>
-        <enabled>true</enabled>
-    </classAccesses>
-    <classAccesses>
         <apexClass>ApplicationRestartJobRestController</apexClass>
         <enabled>true</enabled>
     </classAccesses>
@@ -34,10 +30,6 @@
     </classAccesses>
     <classAccesses>
         <apexClass>ApplicationSubmitStepRestController</apexClass>
-        <enabled>true</enabled>
-    </classAccesses>
-    <classAccesses>
-        <apexClass>E2ERestResponseWriter</apexClass>
         <enabled>true</enabled>
     </classAccesses>
     <customMetadataTypeAccesses>

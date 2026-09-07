@@ -41,7 +41,8 @@ Success:
   "snapshot": {},
   "job": null,
   "conversion": null,
-  "errors": []
+  "errors": [],
+  "errorDetails": []
 }
 ```
 
@@ -55,6 +56,13 @@ Failure:
   "conversion": null,
   "errors": [
     "Consumer key is required."
+  ],
+  "errorDetails": [
+    {
+      "code": "INVALID_REQUEST",
+      "message": "Consumer key is required.",
+      "details": {}
+    }
   ]
 }
 ```
@@ -78,7 +86,14 @@ with:
 ```json
 {
   "success": false,
-  "errors": ["..."]
+  "errors": ["..."],
+  "errorDetails": [
+    {
+      "code": "...",
+      "message": "...",
+      "details": {}
+    }
+  ]
 }
 ```
 
@@ -102,6 +117,8 @@ This is intentional.
 The request was understood and processed, but the Application cannot move because validation, jobs, stop processes, or transition rules blocked it.
 
 Consumers should use `success` and returned payload, not HTTP status alone, to decide UI behavior.
+
+Consumers should use `errorDetails[].code` for stable branching and `errors[]` only as a simple message list.
 
 ## Request Rules
 
@@ -221,3 +238,5 @@ HTTP transports commands.
 Application State decides behavior.
 
 Snapshot tells Consumers what is true now and what can happen next.
+
+See `docs/error-model.md` for stable API error codes.

@@ -9,7 +9,7 @@ global with sharing class ApplicationInitRestController {
             InitApplicationCommand command = InitApplicationCommand.fromJson(requestBody);
             E2ERestResponseWriter.writeResponse(200, new InitApplicationHandler().execute(command));
         } catch (Exception ex) {
-            E2ERestResponseWriter.writeResponse(400, CommandResult.fail(ex.getMessage()));
+            E2ERestResponseWriter.writeResponse(400, CommandResult.fail(ex));
         }
     }
 }

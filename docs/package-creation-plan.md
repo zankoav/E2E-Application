@@ -41,8 +41,10 @@ sf project deploy validate \
   --test-level RunSpecifiedTests \
   --tests ProcessDefinitionTest \
   --tests ConsumerAccessServiceTest \
+  --tests ErrorInfoMapperTest \
   --tests IntegrationServiceTest \
   --tests ConvertApplicationsHandlerTest \
+  --tests ApplicationLifecycleGuardTest \
   --tests InitApplicationHandlerTest \
   --tests SubmitStepHandlerTest \
   --tests GetSnapshotHandlerTest \
