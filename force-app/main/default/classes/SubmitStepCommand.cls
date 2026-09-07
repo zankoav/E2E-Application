@@ -1,13 +1,13 @@
-public class SubmitStepCommand {
-    public String applicationId;
-    public String consumerKey;
-    public String stepKey;
-    public Map<String, Object> data = new Map<String, Object>();
+global class SubmitStepCommand {
+    global String applicationId;
+    global String consumerKey;
+    global String stepKey;
+    global Map<String, Object> data = new Map<String, Object>();
 
-    public SubmitStepCommand() {
+    global SubmitStepCommand() {
     }
 
-    public static SubmitStepCommand fromJson(String requestBody) {
+    global static SubmitStepCommand fromJson(String requestBody) {
         SubmitStepCommand command = new SubmitStepCommand();
         if (String.isBlank(requestBody)) {
             return command;

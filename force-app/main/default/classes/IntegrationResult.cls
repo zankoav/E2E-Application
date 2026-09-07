@@ -1,20 +1,20 @@
-public class IntegrationResult {
-    public Boolean success;
-    public String errorCode;
-    public String errorMessage;
-    public Map<String, Object> data = new Map<String, Object>();
+global class IntegrationResult {
+    global Boolean success;
+    global String errorCode;
+    global String errorMessage;
+    global Map<String, Object> data = new Map<String, Object>();
 
-    public IntegrationResult() {
+    global IntegrationResult() {
         this.success = true;
     }
 
-    public static IntegrationResult ok(Map<String, Object> data) {
+    global static IntegrationResult ok(Map<String, Object> data) {
         IntegrationResult result = new IntegrationResult();
         result.data = data == null ? new Map<String, Object>() : data;
         return result;
     }
 
-    public static IntegrationResult fail(String errorCode, String errorMessage) {
+    global static IntegrationResult fail(String errorCode, String errorMessage) {
         IntegrationResult result = new IntegrationResult();
         result.success = false;
         result.errorCode = errorCode;

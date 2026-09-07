@@ -1,3 +1,3 @@
-public interface StepTransitionRule {
+global interface StepTransitionRule {
     RuleResult canTransition(StepRuntimeContext context, Map<String, Object> ruleDefinition);
 }

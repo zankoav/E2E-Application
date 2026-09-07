@@ -1,0 +1,131 @@
+{
+  "default": {
+    "description": "Smallest broad runtime validation for package-level changes.",
+    "tests": [
+      "ProcessDefinitionTest",
+      "ConsumerAccessServiceTest",
+      "IntegrationServiceTest",
+      "ConvertApplicationsHandlerTest",
+      "ApplicationLifecycleGuardTest",
+      "InitApplicationHandlerTest",
+      "SubmitStepHandlerTest",
+      "GetSnapshotHandlerTest",
+      "GetJobStatusHandlerTest",
+      "RuleEngineTest",
+      "JobEngineTest",
+      "RunJobHandlerTest",
+      "ContinueApplicationHandlerTest",
+      "RestartJobHandlerTest"
+    ]
+  },
+  "areas": {
+    "definition": {
+      "paths": [
+        "force-app/main/default/classes/ProcessDefinition.cls",
+        "force-app/main/default/classes/DefinitionResolver.cls",
+        "force-app/main/default/classes/DefinitionValidator.cls",
+        "force-app/main/default/customMetadata/Process_Definition.*"
+      ],
+      "tests": [
+        "ProcessDefinitionTest"
+      ]
+    },
+    "consumer": {
+      "paths": [
+        "force-app/main/default/classes/Consumer*.cls",
+        "force-app/main/default/customMetadata/Consumer_Definition.*",
+        "force-app/main/default/objects/Consumer_Definition__mdt/**"
+      ],
+      "tests": [
+        "ConsumerAccessServiceTest",
+        "InitApplicationHandlerTest",
+        "SubmitStepHandlerTest",
+        "GetSnapshotHandlerTest",
+        "GetJobStatusHandlerTest",
+        "RunJobHandlerTest",
+        "ContinueApplicationHandlerTest",
+        "RestartJobHandlerTest",
+        "ConvertApplicationsHandlerTest"
+      ]
+    },
+    "integration": {
+      "paths": [
+        "force-app/main/default/classes/Integration*.cls",
+        "force-app/main/default/classes/DefaultIntegrationAdapter.cls",
+        "force-app/main/default/customMetadata/Integration_Definition.*",
+        "force-app/main/default/objects/Integration_Definition__mdt/**"
+      ],
+      "tests": [
+        "IntegrationServiceTest"
+      ]
+    },
+    "stepRuntime": {
+      "paths": [
+        "force-app/main/default/classes/*Step*.cls",
+        "force-app/main/default/classes/*Snapshot*.cls",
+        "force-app/main/default/classes/RuleEngine.cls",
+        "force-app/main/default/classes/ApplicationStateStore.cls"
+      ],
+      "tests": [
+        "ApplicationLifecycleGuardTest",
+        "InitApplicationHandlerTest",
+        "SubmitStepHandlerTest",
+        "ContinueApplicationHandlerTest",
+        "GetSnapshotHandlerTest",
+        "RuleEngineTest"
+      ]
+    },
+    "jobs": {
+      "paths": [
+        "force-app/main/default/classes/*Job*.cls",
+        "force-app/main/default/classes/ApplicationJobQueueable.cls",
+        "force-app/main/default/classes/RunJob*.cls",
+        "force-app/main/default/classes/RestartJob*.cls",
+        "force-app/main/default/classes/GetJobStatus*.cls"
+      ],
+      "tests": [
+        "JobEngineTest",
+        "RunJobHandlerTest",
+        "RestartJobHandlerTest",
+        "GetJobStatusHandlerTest",
+        "SubmitStepHandlerTest",
+        "ContinueApplicationHandlerTest"
+      ]
+    },
+    "conversion": {
+      "paths": [
+        "force-app/main/default/classes/*Convert*.cls",
+        "force-app/main/default/classes/*Conversion*.cls",
+        "force-app/main/default/classes/*Mapping*.cls",
+        "force-app/main/default/classes/Application_Record_Link__c/**",
+        "force-app/main/default/objects/Application_Record_Link__c/**"
+      ],
+      "tests": [
+        "ConvertApplicationsHandlerTest",
+        "ProcessDefinitionTest",
+        "ConsumerAccessServiceTest"
+      ]
+    },
+    "security": {
+      "paths": [
+        "force-app/main/default/permissionsets/**",
+        "docs/security-model.md"
+      ],
+      "tests": [
+        "ProcessDefinitionTest",
+        "ConsumerAccessServiceTest",
+        "IntegrationServiceTest",
+        "ConvertApplicationsHandlerTest",
+        "InitApplicationHandlerTest",
+        "SubmitStepHandlerTest",
+        "GetSnapshotHandlerTest",
+        "GetJobStatusHandlerTest",
+        "RuleEngineTest",
+        "JobEngineTest",
+        "RunJobHandlerTest",
+        "ContinueApplicationHandlerTest",
+        "RestartJobHandlerTest"
+      ]
+    }
+  }
+}

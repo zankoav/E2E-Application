@@ -200,8 +200,14 @@ public inherited sharing class ApplicationStateStore {
     }
 
     public void updateApplicationStep(Application__c application, String nextStepKey, Boolean completed) {
+        ApplicationLifecycleGuard.requireMutable(application, 'Update Application Step');
         application.Current_Step_Key__c = nextStepKey;
         if (completed) {
+            ApplicationLifecycleGuard.requireTransition(
+                application,
+                FrameworkConstants.APPLICATION_STATUS_COMPLETED,
+                'Complete Application'
+            );
             application.Status__c = FrameworkConstants.APPLICATION_STATUS_COMPLETED;
             application.Conversion_Status__c = FrameworkConstants.CONVERSION_STATUS_READY;
             application.Completed_At__c = System.now();
@@ -305,14 +311,51 @@ public inherited sharing class ApplicationStateStore {
 
         List<Application__c> updates = new List<Application__c>();
         for (Application__c application : applications) {
+            requireConversionTransition(application, status);
             Application__c updateRecord = new Application__c(Id = application.Id);
             updateRecord.Conversion_Status__c = status;
             if (converted) {
                 updateRecord.Converted_At__c = System.now();
+                application.Converted_At__c = updateRecord.Converted_At__c;
             }
+            application.Conversion_Status__c = status;
             updates.add(updateRecord);
         }
         update updates;
+    }
+
+    private void requireConversionTransition(Application__c application, String targetStatus) {
+        if (application == null || application.Id == null) {
+            throw new FrameworkException('Application is required.');
+        }
+        if (application.Status__c != FrameworkConstants.APPLICATION_STATUS_COMPLETED) {
+            throw new FrameworkException('Application must be Completed before conversion. Id: ' + String.valueOf(application.Id));
+        }
+
+        String currentStatus = application.Conversion_Status__c;
+        if (currentStatus == targetStatus) {
+            return;
+        }
+        if (targetStatus == FrameworkConstants.CONVERSION_STATUS_CONVERTING) {
+            if (
+                currentStatus == FrameworkConstants.CONVERSION_STATUS_READY ||
+                currentStatus == FrameworkConstants.CONVERSION_STATUS_FAILED
+            ) {
+                return;
+            }
+        }
+        if (
+            currentStatus == FrameworkConstants.CONVERSION_STATUS_CONVERTING &&
+            (
+                targetStatus == FrameworkConstants.CONVERSION_STATUS_CONVERTED ||
+                targetStatus == FrameworkConstants.CONVERSION_STATUS_FAILED
+            )
+        ) {
+            return;
+        }
+        throw new FrameworkException(
+            'Conversion cannot move from ' + currentStatus + ' to ' + targetStatus + '.'
+        );
     }
 
     private InitResult createResult(Application__c application, Boolean created) {

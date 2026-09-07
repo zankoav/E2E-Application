@@ -1,6 +1,10 @@
 public class FrameworkConstants {
+    public static final String APPLICATION_STATUS_DRAFT = 'Draft';
     public static final String APPLICATION_STATUS_IN_PROGRESS = 'InProgress';
+    public static final String APPLICATION_STATUS_WAITING_FOR_JOBS = 'WaitingForJobs';
     public static final String APPLICATION_STATUS_COMPLETED = 'Completed';
+    public static final String APPLICATION_STATUS_CANCELLED = 'Cancelled';
+    public static final String APPLICATION_STATUS_EXPIRED = 'Expired';
     public static final String CONVERSION_STATUS_NOT_READY = 'NotReady';
     public static final String CONVERSION_STATUS_READY = 'Ready';
     public static final String CONVERSION_STATUS_CONVERTING = 'Converting';

@@ -1,7 +1,7 @@
-public class IntegrationDefinition {
-    public String key;
-    public String adapterClass;
-    public String namedCredential;
-    public Map<String, Object> settings = new Map<String, Object>();
-    public Map<String, Object> raw = new Map<String, Object>();
+global class IntegrationDefinition {
+    global String key;
+    global String adapterClass;
+    global String namedCredential;
+    global Map<String, Object> settings = new Map<String, Object>();
+    global Map<String, Object> raw = new Map<String, Object>();
 }

@@ -1,17 +1,17 @@
-public class JobExecutionResult {
-    public Boolean success;
-    public String errorCode;
-    public String errorMessage;
+global class JobExecutionResult {
+    global Boolean success;
+    global String errorCode;
+    global String errorMessage;
 
-    public JobExecutionResult() {
+    global JobExecutionResult() {
         this.success = true;
     }
 
-    public static JobExecutionResult ok() {
+    global static JobExecutionResult ok() {
         return new JobExecutionResult();
     }
 
-    public static JobExecutionResult fail(String errorCode, String errorMessage) {
+    global static JobExecutionResult fail(String errorCode, String errorMessage) {
         JobExecutionResult result = new JobExecutionResult();
         result.success = false;
         result.errorCode = errorCode;

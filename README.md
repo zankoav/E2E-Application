@@ -1,4 +1,50 @@
-# Salesforce DX Project: Next Steps
+# E2E Application
+
+Salesforce package project for a backend-first E2E Application framework.
+
+The framework provides a strict runtime skeleton for:
+
+- application initialization
+- step state and snapshots
+- job execution
+- integration boundaries
+- conversion mapping into CRM records
+- REST API commands
+
+## Documentation
+
+- `docs/vision.md`
+- `docs/domain-language.md`
+- `docs/core-object-model.md`
+- `docs/application-lifecycle.md`
+- `docs/process-definition-shape.md`
+- `docs/runtime-flow.md`
+- `docs/api-commands.md`
+- `docs/rest-api-contract.md`
+- `docs/extension-model.md`
+- `docs/extension-contracts.md`
+- `docs/admin-guide.md`
+- `docs/security-model.md`
+- `docs/package-strategy.md`
+- `docs/package-readiness.md`
+- `docs/package-creation-plan.md`
+- `docs/examples/README.md`
+
+## Validation
+
+Use `test_matrix.json` to choose impacted Apex tests.
+
+For broad runtime/package changes, use the `default.tests` list.
+
+Do not run all local tests unless explicitly required.
+
+## Package
+
+The package directory is `force-app`.
+
+`sfdx-project.json` is prepared for an initial `0.1.0.NEXT` package version, but package aliases and namespace should be added only after package creation/registration in Salesforce.
+
+## Original Salesforce DX Notes
 
 Now that you’ve created a Salesforce DX project, what’s next? Here are some documentation resources to get you started.
 

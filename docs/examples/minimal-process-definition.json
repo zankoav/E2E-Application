@@ -1,0 +1,47 @@
+{
+  "process": {
+    "key": "minimalApplication",
+    "label": "Minimal Application",
+    "version": "1.0.0"
+  },
+  "scenarios": {
+    "default": {
+      "label": "Default",
+      "initialStep": "contactDetails",
+      "steps": [
+        "contactDetails",
+        "finish"
+      ]
+    }
+  },
+  "steps": {
+    "contactDetails": {
+      "label": "Contact Details",
+      "type": "standard",
+      "required": true,
+      "dataKeys": [
+        "contact.email",
+        "contact.phone"
+      ],
+      "validationRules": [
+        "contactEmailRequired"
+      ]
+    },
+    "finish": {
+      "label": "Finish",
+      "type": "finish",
+      "required": true
+    }
+  },
+  "rules": {
+    "contactEmailRequired": {
+      "type": "validation",
+      "class": "DefaultValidationRule",
+      "blocking": true
+    }
+  },
+  "jobs": {},
+  "integrations": {},
+  "mappings": {},
+  "stopProcesses": {}
+}

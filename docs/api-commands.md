@@ -10,6 +10,8 @@ Every command requires `consumerKey`.
 
 The backend validates Consumer access through `Consumer_Definition__mdt` and Application ownership. A frontend should not decide whether a Consumer is trusted.
 
+The REST envelope and HTTP behavior are documented in `rest-api-contract.md`.
+
 ## Initial Commands
 
 | Command | Purpose |

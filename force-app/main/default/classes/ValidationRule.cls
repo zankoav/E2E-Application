@@ -1,3 +1,3 @@
-public interface ValidationRule {
+global interface ValidationRule {
     RuleResult validate(StepRuntimeContext context, Map<String, Object> ruleDefinition);
 }

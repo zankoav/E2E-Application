@@ -1,15 +1,15 @@
-public class StepRuntimeContext {
-    public Application__c application;
-    public ProcessDefinition definition;
-    public ProcessDefinition.ScenarioDefinition scenario;
-    public SubmitStepCommand command;
-    public String currentStepKey;
-    public String nextStepKey;
-    public Map<String, Object> submittedData;
-    public List<Application_Stop_Process__c> activeStopProcesses = new List<Application_Stop_Process__c>();
-    public List<Application_Job__c> jobs = new List<Application_Job__c>();
+global class StepRuntimeContext {
+    global Application__c application;
+    global ProcessDefinition definition;
+    global ProcessDefinition.ScenarioDefinition scenario;
+    global SubmitStepCommand command;
+    global String currentStepKey;
+    global String nextStepKey;
+    global Map<String, Object> submittedData;
+    global List<Application_Stop_Process__c> activeStopProcesses = new List<Application_Stop_Process__c>();
+    global List<Application_Job__c> jobs = new List<Application_Job__c>();
 
-    public StepRuntimeContext(
+    global StepRuntimeContext(
         Application__c application,
         ProcessDefinition definition,
         ProcessDefinition.ScenarioDefinition scenario,
@@ -19,7 +19,7 @@ public class StepRuntimeContext {
         this(application, definition, scenario, command, nextStepKey, new List<Application_Stop_Process__c>());
     }
 
-    public StepRuntimeContext(
+    global StepRuntimeContext(
         Application__c application,
         ProcessDefinition definition,
         ProcessDefinition.ScenarioDefinition scenario,
@@ -39,7 +39,7 @@ public class StepRuntimeContext {
         }
     }
 
-    public void setJobs(List<Application_Job__c> jobs) {
+    global void setJobs(List<Application_Job__c> jobs) {
         this.jobs = jobs == null ? new List<Application_Job__c>() : jobs;
     }
 }

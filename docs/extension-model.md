@@ -73,6 +73,8 @@ Contracts should receive context objects and return result objects.
 
 They should not depend on internal core implementation details.
 
+Concrete contract signatures and examples are documented in `extension-contracts.md`.
+
 ## Dynamic Resolution
 
 The core should instantiate extension classes by class name from settings.

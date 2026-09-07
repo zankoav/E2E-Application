@@ -1,24 +1,24 @@
-public class ProcessDefinition {
-    public String key;
-    public String label;
-    public String version;
-    public Map<String, ScenarioDefinition> scenarios = new Map<String, ScenarioDefinition>();
-    public Map<String, Object> steps = new Map<String, Object>();
-    public Map<String, Object> raw = new Map<String, Object>();
+global class ProcessDefinition {
+    global String key;
+    global String label;
+    global String version;
+    global Map<String, ScenarioDefinition> scenarios = new Map<String, ScenarioDefinition>();
+    global Map<String, Object> steps = new Map<String, Object>();
+    global Map<String, Object> raw = new Map<String, Object>();
 
-    public class ScenarioDefinition {
-        public String key;
-        public String label;
-        public String initialStep;
-        public List<String> steps = new List<String>();
-        public List<String> consumerKeys = new List<String>();
+    global class ScenarioDefinition {
+        global String key;
+        global String label;
+        global String initialStep;
+        global List<String> steps = new List<String>();
+        global List<String> consumerKeys = new List<String>();
     }
 
-    public ScenarioDefinition getScenario(String scenarioKey) {
+    global ScenarioDefinition getScenario(String scenarioKey) {
         return scenarios.get(scenarioKey);
     }
 
-    public static ProcessDefinition parse(String definitionJson) {
+    global static ProcessDefinition parse(String definitionJson) {
         if (String.isBlank(definitionJson)) {
             throw new FrameworkException('Process definition JSON is empty.');
         }

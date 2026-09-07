@@ -7,18 +7,9 @@ global with sharing class ApplicationRestartJobRestController {
                 ? null
                 : RestContext.request.requestBody.toString();
             RestartJobCommand command = RestartJobCommand.fromJson(requestBody);
-            writeResponse(200, new RestartJobHandler().execute(command));
+            E2ERestResponseWriter.writeResponse(200, new RestartJobHandler().execute(command));
         } catch (Exception ex) {
-            writeResponse(400, CommandResult.fail(ex.getMessage()));
+            E2ERestResponseWriter.writeResponse(400, CommandResult.fail(ex.getMessage()));
         }
-    }
-
-    private static void writeResponse(Integer statusCode, CommandResult result) {
-        if (RestContext.response == null) {
-            RestContext.response = new RestResponse();
-        }
-        RestContext.response.statusCode = statusCode;
-        RestContext.response.addHeader('Content-Type', 'application/json');
-        RestContext.response.responseBody = Blob.valueOf(JSON.serialize(result));
     }
 }

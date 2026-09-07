@@ -1,11 +1,11 @@
-public class MappingTransformContext {
-    public Application__c application;
-    public String mappingKey;
-    public String targetObject;
-    public String targetField;
-    public String sourceKey;
-    public Object sourceValue;
-    public Map<String, Object> applicationData = new Map<String, Object>();
-    public Map<String, Object> fieldMapping = new Map<String, Object>();
-    public Map<String, Object> mappingDefinition = new Map<String, Object>();
+global class MappingTransformContext {
+    global Application__c application;
+    global String mappingKey;
+    global String targetObject;
+    global String targetField;
+    global String sourceKey;
+    global Object sourceValue;
+    global Map<String, Object> applicationData = new Map<String, Object>();
+    global Map<String, Object> fieldMapping = new Map<String, Object>();
+    global Map<String, Object> mappingDefinition = new Map<String, Object>();
 }
