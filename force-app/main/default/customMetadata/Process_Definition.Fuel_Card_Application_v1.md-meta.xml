@@ -21,6 +21,10 @@
         <value xsi:type="xsd:string">fuelCardApplication</value>
     </values>
     <values>
+        <field>Usage__c</field>
+        <value xsi:type="xsd:string">Runtime</value>
+    </values>
+    <values>
         <field>Version__c</field>
         <value xsi:type="xsd:string">1.0.0</value>
     </values>

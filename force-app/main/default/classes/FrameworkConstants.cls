@@ -10,6 +10,8 @@ public class FrameworkConstants {
     public static final String CONVERSION_STATUS_CONVERTING = 'Converting';
     public static final String CONVERSION_STATUS_CONVERTED = 'Converted';
     public static final String CONVERSION_STATUS_FAILED = 'Failed';
+    public static final String DEFINITION_USAGE_REFERENCE = 'Reference';
+    public static final String DEFINITION_USAGE_RUNTIME = 'Runtime';
     public static final String EVENT_APPLICATION_INITIALIZED = 'ApplicationInitialized';
     public static final String EVENT_APPLICATION_FINISHED = 'ApplicationFinished';
     public static final String EVENT_CONVERSION_COMPLETED = 'ConversionCompleted';

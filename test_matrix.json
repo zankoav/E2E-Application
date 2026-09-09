@@ -26,7 +26,8 @@
         "force-app/main/default/classes/ProcessDefinition.cls",
         "force-app/main/default/classes/DefinitionResolver.cls",
         "force-app/main/default/classes/DefinitionValidator.cls",
-        "force-app/main/default/customMetadata/Process_Definition.*"
+        "force-app/main/default/customMetadata/Process_Definition.*",
+        "force-app/main/default/objects/Process_Definition__mdt/**"
       ],
       "tests": [
         "ProcessDefinitionTest"

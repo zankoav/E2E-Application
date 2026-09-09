@@ -209,8 +209,13 @@ Possible `Process_Definition__mdt` fields:
 | `Process_Key__c` | Stable process key. |
 | `Version__c` | Definition version. |
 | `Active__c` | Whether this definition version is active. |
+| `Usage__c` | `Reference` for examples/templates, `Runtime` for definitions that API can start. |
 | `Definition_JSON__c` | Full process definition body. |
 | `Description__c` | Human-readable description. |
+
+A process definition is runnable only when `Active__c = true` and `Usage__c = Runtime`.
+
+Packaged reference examples should use `Usage__c = Reference` so they can be read or copied without allowing accidental runtime `Application__c` creation.
 
 `Definition_JSON__c` can contain:
 

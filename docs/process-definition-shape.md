@@ -6,6 +6,10 @@
 
 Custom Metadata is the Salesforce-native container. JSON is the process definition body.
 
+Runtime API can start a process definition only when its metadata record has `Active__c = true` and `Usage__c = Runtime`.
+
+Use `Usage__c = Reference` for examples and templates that should be visible but not executable.
+
 ## Top-Level Shape
 
 ```json

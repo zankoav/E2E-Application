@@ -37,11 +37,16 @@ Then set the metadata fields:
 - `Process_Key__c`
 - `Version__c`
 - `Active__c`
+- `Usage__c`
 - `Description__c`
 
 `Process_Key__c` should match `process.key`.
 
 `Version__c` should match `process.version`.
+
+Use `Usage__c = Reference` for example/template definitions.
+
+Use `Usage__c = Runtime` only after copying an example into a real runnable process.
 
 Before using a definition at runtime, validate the project with the tests listed in `test_matrix.json`.
 

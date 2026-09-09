@@ -11,11 +11,18 @@ Set:
 - `Process_Key__c`
 - `Version__c`
 - `Active__c`
+- `Usage__c`
 - `Definition_JSON__c`
 
 `Definition_JSON__c` contains the process body.
 
 The top-level shape is documented in `process-definition-shape.md`.
+
+Use `Usage__c = Runtime` only for process definitions that runtime API is allowed to start.
+
+Use `Usage__c = Reference` for packaged examples, templates, and documentation records.
+
+Runtime API treats a process as runnable only when `Active__c = true` and `Usage__c = Runtime`.
 
 ## Add A Scenario
 

@@ -14,6 +14,13 @@ private class ProcessDefinitionTest {
     }
 
     @IsTest
+    static void resolvesOnlyRunnableProcessDefinitions() {
+        ProcessDefinition definition = new DefinitionResolver().resolveActive('fuelCardApplication');
+
+        Assert.areEqual('fuelCardApplication', definition.key);
+    }
+
+    @IsTest
     static void rejectsScenarioWithMissingStep() {
         String definitionJson = '{"process":{"key":"fuelCardApplication","version":"1.0.0"},"scenarios":{"newCustomer":{"initialStep":"contactDetails","steps":["contactDetails"]}},"steps":{}}';
 

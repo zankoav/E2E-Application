@@ -11,15 +11,16 @@ public virtual inherited sharing class DefinitionResolver {
         }
 
         List<Process_Definition__mdt> records = [
-            SELECT Process_Key__c, Version__c, Active__c, Definition_JSON__c
+            SELECT Process_Key__c, Version__c, Active__c, Usage__c, Definition_JSON__c
             FROM Process_Definition__mdt
             WHERE Process_Key__c = :processKey
             AND Active__c = true
+            AND Usage__c = :FrameworkConstants.DEFINITION_USAGE_RUNTIME
             LIMIT 1
         ];
 
         if (records.isEmpty()) {
-            throw new FrameworkException('Active process definition was not found. Process: ' + processKey);
+            throw new FrameworkException('Runnable process definition was not found. Process: ' + processKey);
         }
 
         ProcessDefinition definition = ProcessDefinition.parse(records[0].Definition_JSON__c);
