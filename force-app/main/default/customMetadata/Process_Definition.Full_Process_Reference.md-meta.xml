@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomMetadata xmlns="http://soap.sforce.com/2006/04/metadata"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+    <label>Full Process Reference</label>
+    <protected>false</protected>
+    <values>
+        <field>Active__c</field>
+        <value xsi:type="xsd:boolean">true</value>
+    </values>
+    <values>
+        <field>Description__c</field>
+        <value xsi:type="xsd:string">Reference process with scenarios, optional steps, jobs, reference data, stop processes, and conversion mapping.</value>
+    </values>
+    <values>
+        <field>Definition_JSON__c</field>
+        <value xsi:type="xsd:string">{"process":{"key":"fuelCardApplication","label":"Fuel Card Application","version":"1.0.0"},"scenarios":{"newCustomer":{"label":"New Customer","initialStep":"contactDetails","steps":["contactDetails","companyDetails","directorDetails","productSelection","finish"]},"mobileShortFlow":{"label":"Mobile Short Flow","consumerKeys":["mobileApp"],"initialStep":"contactDetails","steps":["contactDetails","companyDetails","finish"]}},"steps":{"contactDetails":{"label":"Contact Details","type":"standard","required":true,"dataKeys":["contact.email","contact.phone"],"validationRules":["contactEmailRequired"],"jobTriggerRules":["runEmailValidation"],"transitionRules":["contactDetailsCanMoveNext"]},"companyDetails":{"label":"Company Details","type":"standard","required":true,"dataKeys":["company.name","company.registrationNumber","company.vatNumber"],"validationRules":["companyNameRequired"],"jobTriggerRules":["runBusinessObjectCheck"],"transitionRules":["companyDetailsCanMoveNext"]},"directorDetails":{"label":"Director Details","type":"standard","required":false,"availabilityRules":["directorDetailsAvailable"],"dataKeys":["director.firstName","director.lastName"]},"productSelection":{"label":"Product Selection","type":"standard","required":true,"referenceData":{"availableProducts":{"integrationKey":"productCatalog","input":{"activeOnly":true}}},"allowedStopProcesses":["MANUAL_REVIEW"],"jobTriggerRules":["runSyncData"],"transitionRules":["productSelectionCanFinish"]},"finish":{"label":"Finish","type":"finish","required":true}},"rules":{"contactEmailRequired":{"type":"validation","class":"DefaultValidationRule","blocking":true},"companyNameRequired":{"type":"validation","class":"DefaultValidationRule","blocking":true},"directorDetailsAvailable":{"type":"stepAvailability","class":"DefaultStepAvailabilityRule","when":{"source":"company.requiresDirectorDetails","equals":true}},"runEmailValidation":{"type":"jobTrigger","jobKey":"emailValidation","when":{"dataChanged":["contact.email"]}},"runBusinessObjectCheck":{"type":"jobTrigger","jobKey":"checkBusinessObjects"},"runSyncData":{"type":"jobTrigger","jobKey":"syncData"},"contactDetailsCanMoveNext":{"type":"stepTransition","requiresJobs":[{"jobKey":"emailValidation","status":"Completed"}]},"companyDetailsCanMoveNext":{"type":"stepTransition","requiresJobs":[{"jobKey":"checkBusinessObjects","status":"Completed"}]},"productSelectionCanFinish":{"type":"finish","requiresJobs":[{"jobKey":"syncData","status":"Completed"}]}},"jobs":{"emailValidation":{"label":"Email Validation","executorClass":"DefaultJobExecutor","executionMode":"syncCallout","canBeRestarted":true},"checkBusinessObjects":{"label":"Business Object Check","executorClass":"DefaultJobExecutor","executionMode":"sync","canBeRestarted":true},"syncData":{"label":"Sync Data","executorClass":"DefaultJobExecutor","executionMode":"async","canBeRestarted":true,"dependsOn":["emailValidation","checkBusinessObjects"]}},"integrations":{"emailProvider":{"definitionKey":"default","adapterClass":"DefaultIntegrationAdapter","namedCredential":"EmailProvider","settings":{"timeoutMs":5000}},"productCatalog":{"definitionKey":"default","adapterClass":"DefaultIntegrationAdapter","settings":{"source":"Product2"}}},"mappings":{"account":{"role":"PrimaryAccount","targetObject":"Account","operation":"upsert","match":{"field":"AccountNumber","source":"company.registrationNumber"},"fields":[{"target":"Name","source":"company.name"}]},"contact":{"role":"PrimaryContact","targetObject":"Contact","operation":"insert","dependsOn":["account"],"fields":[{"target":"LastName","source":"contact.lastName"},{"target":"Email","source":"contact.email"},{"target":"AccountId","fromRecord":"account"}]}},"stopProcesses":{"MANUAL_REVIEW":{"label":"Manual Review","type":"ManualUnlockRequired","defaultBlocking":true}}}</value>
+    </values>
+    <values>
+        <field>Process_Key__c</field>
+        <value xsi:type="xsd:string">fuelCardApplication</value>
+    </values>
+    <values>
+        <field>Usage__c</field>
+        <value xsi:type="xsd:string">Reference</value>
+    </values>
+    <values>
+        <field>Version__c</field>
+        <value xsi:type="xsd:string">1.0.0</value>
+    </values>
+</CustomMetadata>

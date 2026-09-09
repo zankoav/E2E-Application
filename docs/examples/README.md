@@ -2,9 +2,11 @@
 
 These examples are reference templates for process definitions.
 
-They are intentionally stored as documentation files, not active Custom Metadata records.
-
 Use them as starting points when creating `Process_Definition__mdt.Definition_JSON__c`.
+
+The package also includes reference `Process_Definition__mdt` records with `Usage__c = Reference`.
+
+Reference records are visible for reading and copying, but runtime API cannot start them.
 
 ## Files
 
@@ -27,6 +29,16 @@ A broader reference process with:
 - conversion mapping with `upsert`
 - mapping dependency from Contact to Account
 - a stop process example
+
+## Packaged Reference Records
+
+`Process_Definition.Minimal_Process_Reference`
+
+Packaged reference record for the minimal process.
+
+`Process_Definition.Full_Process_Reference`
+
+Packaged reference record for the full process.
 
 ## Usage
 
