@@ -89,6 +89,7 @@ public inherited sharing class SnapshotBuilder {
             ApplicationSnapshot.StepInfo stepInfo = new ApplicationSnapshot.StepInfo();
             stepInfo.key = stepKey;
             stepInfo.label = getStepLabel(definition, stepKey);
+            stepInfo.referenceDataKeys = getReferenceDataKeys(definition, stepKey);
             assignStepAvailability(stepInfo, application, definition, scenario, stepKey, currentIndex, nextStepKey, stopProcesses, jobs);
             steps.add(stepInfo);
         }
@@ -297,6 +298,19 @@ public inherited sharing class SnapshotBuilder {
             }
         }
         return stepKey;
+    }
+
+    private List<String> getReferenceDataKeys(ProcessDefinition definition, String stepKey) {
+        List<String> referenceKeys = new List<String>();
+        Object rawStep = definition.steps.get(stepKey);
+        if (!(rawStep instanceof Map<String, Object>)) {
+            return referenceKeys;
+        }
+
+        Map<String, Object> referenceData = getObjectMap((Map<String, Object>) rawStep, 'referenceData');
+        referenceKeys.addAll(referenceData.keySet());
+        referenceKeys.sort();
+        return referenceKeys;
     }
 
     private Map<String, Object> getObjectMap(Map<String, Object> source, String key) {

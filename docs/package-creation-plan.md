@@ -43,6 +43,7 @@ sf project deploy validate \
   --tests ConsumerAccessServiceTest \
   --tests ErrorInfoMapperTest \
   --tests IntegrationServiceTest \
+  --tests ReferenceDataServiceTest \
   --tests ConvertApplicationsHandlerTest \
   --tests ApplicationLifecycleGuardTest \
   --tests InitApplicationHandlerTest \

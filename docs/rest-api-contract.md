@@ -22,6 +22,7 @@ All endpoints are exposed under Salesforce Apex REST:
 | --- | --- | --- | --- |
 | `InitApplication` | `POST` | `/applications/init` | `snapshot` |
 | `GetSnapshot` | `POST` | `/applications/snapshot` | `snapshot` |
+| `GetReferenceData` | `POST` | `/applications/reference-data` | `references` |
 | `SubmitStep` | `POST` | `/applications/submit-step` | `snapshot` |
 | `ContinueApplication` | `POST` | `/applications/continue` | `snapshot` |
 | `RunJob` | `POST` | `/applications/run-job` | `snapshot` |
@@ -41,6 +42,7 @@ Success:
   "snapshot": {},
   "job": null,
   "conversion": null,
+  "references": null,
   "errors": [],
   "errorDetails": []
 }
@@ -54,6 +56,7 @@ Failure:
   "snapshot": null,
   "job": null,
   "conversion": null,
+  "references": null,
   "errors": [
     "Consumer key is required."
   ],
@@ -72,6 +75,7 @@ Only one primary payload is expected per successful command:
 - `snapshot`
 - `job`
 - `conversion`
+- `references`
 
 ## HTTP Status
 
@@ -173,11 +177,54 @@ Important sections:
 - `application`
 - `steps`
 - `data`
+- `references`
 - `jobs`
 - `stopProcesses`
 - `availableActions`
 
 Consumers should use `availableActions` and per-job `availableActions` to decide which commands can be called next.
+
+Snapshot does not auto-load reference data.
+
+Each Step can expose `referenceDataKeys` so Consumers know which reference datasets can be requested for that Step.
+
+This avoids DML-before-callout issues when Snapshot is returned after state-changing commands such as `InitApplication` or `SubmitStep`.
+
+## Reference Data Contract
+
+`GetReferenceData` returns named reference datasets for a Step.
+
+Request:
+
+```json
+{
+  "applicationId": "a00000000000001AAA",
+  "consumerKey": "webPortal",
+  "stepKey": "products",
+  "referenceKeys": ["availableProducts"]
+}
+```
+
+`stepKey` is optional and defaults to the current Application Step.
+
+`referenceKeys` is optional. When omitted or empty, all reference data entries for the Step are returned.
+
+Response:
+
+```json
+{
+  "success": true,
+  "references": {
+    "availableProducts": {
+      "items": []
+    }
+  }
+}
+```
+
+Reference data is resolved through `IntegrationService`.
+
+Reference data integrations should not perform DML.
 
 ## Job Contract
 

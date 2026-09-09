@@ -104,6 +104,7 @@ Steps define process stages.
       "transitionRules": [
         "contactDetailsCanMoveNext"
       ],
+      "referenceData": {},
       "allowedStopProcesses": []
     }
   }
@@ -123,6 +124,50 @@ Availability rule block codes have framework meaning:
 | `HIDDEN` | Do not show or enter this Step for the current Application State. |
 
 Active Stop Processes block step transition by default. `allowedStopProcesses` explicitly lists stop process codes that this step transition can pass.
+
+## Reference Data
+
+Step `referenceData` defines lookup/catalog data that a Consumer can request from the backend.
+
+The framework does not know business-specific keys such as products, countries, or vehicle types.
+
+It only knows that a step exposes named reference data entries.
+
+```json
+{
+  "steps": {
+    "products": {
+      "label": "Products",
+      "referenceData": {
+        "availableProducts": {
+          "integrationKey": "productCatalog",
+          "input": {
+            "activeOnly": true
+          }
+        }
+      }
+    }
+  },
+  "integrations": {
+    "productCatalog": {
+      "adapterClass": "ProductCatalogIntegrationAdapter"
+    }
+  }
+}
+```
+
+Snapshot step info returns only the available reference keys:
+
+```json
+{
+  "key": "products",
+  "referenceDataKeys": ["availableProducts"]
+}
+```
+
+Consumers load the actual reference data through the Reference Data API.
+
+This keeps state-changing commands safe from Salesforce DML-before-callout restrictions.
 
 ## Rules
 
@@ -171,6 +216,7 @@ Validation checks:
 - job trigger rules have `jobKey`
 - job trigger rules reference existing jobs
 - job `executionMode` is one of `sync`, `syncCallout`, or `async`
+- step `referenceData` entries define `integrationKey`
 
 This validation is a package guardrail. Broken configuration should fail early, before Application State is changed by a runtime command.
 

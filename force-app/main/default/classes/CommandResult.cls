@@ -3,6 +3,7 @@ public class CommandResult {
     public ApplicationSnapshot snapshot;
     public ApplicationSnapshot.JobInfo job;
     public ConversionResult conversion;
+    public Map<String, Object> references;
     public List<String> errors = new List<String>();
     public List<ErrorInfo> errorDetails = new List<ErrorInfo>();
 
@@ -25,6 +26,12 @@ public class CommandResult {
     public static CommandResult ok(ConversionResult conversion) {
         CommandResult result = new CommandResult();
         result.conversion = conversion;
+        return result;
+    }
+
+    public static CommandResult okReferences(Map<String, Object> references) {
+        CommandResult result = new CommandResult();
+        result.references = references == null ? new Map<String, Object>() : references;
         return result;
     }
 

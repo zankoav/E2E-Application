@@ -83,6 +83,14 @@
       "label": "Product Selection",
       "type": "standard",
       "required": true,
+      "referenceData": {
+        "availableProducts": {
+          "integrationKey": "productCatalog",
+          "input": {
+            "activeOnly": true
+          }
+        }
+      },
       "allowedStopProcesses": [
         "MANUAL_REVIEW"
       ],
@@ -194,6 +202,13 @@
       "namedCredential": "EmailProvider",
       "settings": {
         "timeoutMs": 5000
+      }
+    },
+    "productCatalog": {
+      "definitionKey": "default",
+      "adapterClass": "DefaultIntegrationAdapter",
+      "settings": {
+        "source": "Product2"
       }
     }
   },

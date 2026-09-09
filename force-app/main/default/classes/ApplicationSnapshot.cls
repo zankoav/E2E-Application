@@ -2,6 +2,7 @@ public class ApplicationSnapshot {
     public ApplicationInfo application;
     public List<StepInfo> steps = new List<StepInfo>();
     public Map<String, Object> data = new Map<String, Object>();
+    public Map<String, Object> references = new Map<String, Object>();
     public List<JobInfo> jobs = new List<JobInfo>();
     public List<StopProcessInfo> stopProcesses = new List<StopProcessInfo>();
     public List<String> availableActions = new List<String>();
@@ -25,6 +26,7 @@ public class ApplicationSnapshot {
         public String status;
         public Boolean available;
         public String unavailableReason;
+        public List<String> referenceDataKeys = new List<String>();
     }
 
     public class StopProcessInfo {

@@ -105,6 +105,28 @@ private class ProcessDefinitionTest {
     }
 
     @IsTest
+    static void acceptsStepReferenceDataDefinition() {
+        String definitionJson = '{"process":{"key":"fuelCardApplication","version":"1.0.0"},"scenarios":{"newCustomer":{"initialStep":"products","steps":["products"]}},"steps":{"products":{"label":"Products","referenceData":{"availableProducts":{"integrationKey":"productCatalog"}}}},"integrations":{"productCatalog":{"adapterClass":"DefaultIntegrationAdapter"}}}';
+
+        ProcessDefinition definition = ProcessDefinition.parse(definitionJson);
+
+        new DefinitionValidator().validate(definition);
+    }
+
+    @IsTest
+    static void rejectsStepReferenceDataWithoutIntegrationKey() {
+        String definitionJson = '{"process":{"key":"fuelCardApplication","version":"1.0.0"},"scenarios":{"newCustomer":{"initialStep":"products","steps":["products"]}},"steps":{"products":{"label":"Products","referenceData":{"availableProducts":{}}}}}';
+
+        try {
+            ProcessDefinition definition = ProcessDefinition.parse(definitionJson);
+            new DefinitionValidator().validate(definition);
+            Assert.fail('Expected definition validation to fail.');
+        } catch (FrameworkException ex) {
+            Assert.isTrue(ex.getMessage().contains('Reference Data'));
+        }
+    }
+
+    @IsTest
     static void rejectsMappingWithoutTargetObject() {
         String definitionJson = '{"process":{"key":"fuelCardApplication","version":"1.0.0"},"scenarios":{"newCustomer":{"initialStep":"contactDetails","steps":["contactDetails"]}},"steps":{"contactDetails":{"label":"Contact Details"}},"mappings":{"account":{"fields":[{"target":"Name","source":"company.name"}]}}}';
 

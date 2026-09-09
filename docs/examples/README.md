@@ -23,6 +23,7 @@ A broader reference process with:
 - validation, job trigger, transition, and finish rules
 - sync, syncCallout, and async jobs
 - an integration definition reference
+- step reference data loaded through Integration boundary
 - conversion mapping with `upsert`
 - mapping dependency from Contact to Account
 - a stop process example
@@ -49,3 +50,9 @@ Before using a definition at runtime, validate the project with the tests listed
 The examples use default framework classes where possible.
 
 Real projects usually replace those defaults with subscriber extension classes for business-specific validations, jobs, integrations, and mapping transforms.
+
+Reference data examples are intentionally generic.
+
+For example, `availableProducts` is a process-defined key, not a framework keyword.
+
+Consumers discover reference keys from Snapshot step `referenceDataKeys` and load actual values through `/services/apexrest/e2e/applications/reference-data`.

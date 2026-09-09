@@ -122,6 +122,22 @@ private class GetSnapshotHandlerTest {
     }
 
     @IsTest
+    static void snapshotIncludesStepReferenceDataKeys() {
+        Application__c application = createApplication();
+        ProcessDefinition definition = ProcessDefinition.parse(
+            '{"process":{"key":"fuelCardApplication","version":"1.0.0"},"scenarios":{"newCustomer":{"initialStep":"products","steps":["products"]}},"steps":{"products":{"label":"Products","referenceData":{"availableProducts":{"integrationKey":"productCatalog"},"vehicleTypes":{"integrationKey":"vehicleCatalog"}}}}}'
+        );
+        application.Current_Step_Key__c = 'products';
+
+        ApplicationSnapshot snapshot = new SnapshotBuilder().build(application, definition);
+
+        ApplicationSnapshot.StepInfo productsStep = getStepByKey(snapshot.steps, 'products');
+        Assert.areEqual(2, productsStep.referenceDataKeys.size());
+        Assert.isTrue(productsStep.referenceDataKeys.contains('availableProducts'));
+        Assert.isTrue(productsStep.referenceDataKeys.contains('vehicleTypes'));
+    }
+
+    @IsTest
     static void restControllerReturnsErrorForInvalidRequest() {
         RestRequest request = new RestRequest();
         request.requestUri = '/services/apexrest/e2e/applications/snapshot';

@@ -44,6 +44,19 @@ public class DefinitionValidator {
             validateRuleReferences(definition, stepKey, stepDefinition, 'validationRules');
             validateRuleReferences(definition, stepKey, stepDefinition, 'transitionRules');
             validateJobTriggerRules(definition, stepKey, stepDefinition);
+            validateReferenceData(stepKey, stepDefinition);
+        }
+    }
+
+    private void validateReferenceData(String stepKey, Map<String, Object> stepDefinition) {
+        Map<String, Object> referenceData = getObjectMap(stepDefinition.get('referenceData'));
+        for (String referenceKey : referenceData.keySet()) {
+            Map<String, Object> referenceDefinition = getObjectMap(referenceData.get(referenceKey));
+            if (String.isBlank(getString(referenceDefinition, 'integrationKey'))) {
+                throw new FrameworkException(
+                    'Step Reference Data must define integrationKey. Step: ' + stepKey + ', Reference: ' + referenceKey
+                );
+            }
         }
     }
 

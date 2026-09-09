@@ -6,6 +6,7 @@
       "ConsumerAccessServiceTest",
       "ErrorInfoMapperTest",
       "IntegrationServiceTest",
+      "ReferenceDataServiceTest",
       "ConvertApplicationsHandlerTest",
       "ApplicationLifecycleGuardTest",
       "InitApplicationHandlerTest",
@@ -56,11 +57,13 @@
         "force-app/main/default/classes/ErrorInfo*.cls",
         "force-app/main/default/classes/FrameworkErrorCodes.cls",
         "force-app/main/default/classes/E2ERestResponseWriter.cls",
+        "force-app/main/default/classes/*ReferenceData*.cls",
         "docs/rest-api-contract.md",
         "docs/error-model.md"
       ],
       "tests": [
         "ErrorInfoMapperTest",
+        "ReferenceDataServiceTest",
         "InitApplicationHandlerTest",
         "SubmitStepHandlerTest",
         "GetSnapshotHandlerTest",
@@ -80,6 +83,23 @@
       ],
       "tests": [
         "IntegrationServiceTest"
+      ]
+    },
+    "referenceData": {
+      "paths": [
+        "force-app/main/default/classes/*ReferenceData*.cls",
+        "force-app/main/default/classes/Integration*.cls",
+        "force-app/main/default/classes/ApplicationSnapshot.cls",
+        "force-app/main/default/classes/SnapshotBuilder.cls",
+        "force-app/main/default/classes/DefinitionValidator.cls",
+        "docs/process-definition-shape.md",
+        "docs/rest-api-contract.md"
+      ],
+      "tests": [
+        "ReferenceDataServiceTest",
+        "IntegrationServiceTest",
+        "GetSnapshotHandlerTest",
+        "ProcessDefinitionTest"
       ]
     },
     "stepRuntime": {
