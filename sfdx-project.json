@@ -3,13 +3,16 @@
     {
       "path": "force-app",
       "default": true,
-      "package": "E2E Application",
+      "package": "ETE_Fleetcor_Framework",
       "versionName": "ver 0.1",
       "versionNumber": "0.1.0.NEXT"
     }
   ],
   "name": "E2E Application",
-  "namespace": "",
+  "namespace": "fleetcor_ete",
   "sfdcLoginUrl": "https://login.salesforce.com",
-  "sourceApiVersion": "66.0"
+  "sourceApiVersion": "66.0",
+  "packageAliases": {
+    "ETE_Fleetcor_Framework": "0HoIS0000008OMW0A2"
+  }
 }

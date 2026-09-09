@@ -1,6 +1,6 @@
 # Package Creation Plan
 
-This document describes how to create the first real 2GP package records in Dev Hub.
+This document describes how to create the first 2GP package version from the existing Dev Hub package record.
 
 Do not run these commands automatically.
 
@@ -10,7 +10,7 @@ Run them only when the Dev Hub, namespace, and package ownership are confirmed.
 
 Confirm:
 
-- Dev Hub org alias
+- Dev Hub org alias: `Zankoav`
 - package type
 - namespace decision
 - package owner
@@ -25,7 +25,9 @@ The current strategy is:
 The project is already prepared with:
 
 - package directory: `force-app`
-- package name: `E2E Application`
+- package alias: `ETE_Fleetcor_Framework`
+- package id: `0HoIS0000008OMW0A2`
+- namespace: `fleetcor_ete`
 - version name: `ver 0.1`
 - version number: `0.1.0.NEXT`
 - validation matrix: `test_matrix.json`
@@ -61,55 +63,34 @@ Use the `default.tests` list from `test_matrix.json` for broad package-level val
 
 ## 2. Create Package In Dev Hub
 
-Create the package only after Dev Hub alias is confirmed.
+The package record already exists in Dev Hub.
 
-Managed package command shape:
-
-```bash
-sf package create \
-  --name "E2E Application" \
-  --package-type Managed \
-  --path force-app \
-  --target-dev-hub <DEV_HUB_ALIAS>
-```
-
-The command returns a package id that starts with:
+Current package:
 
 ```text
-0Ho
+Name: ETE_Fleetcor_Framework
+Id: 0HoIS0000008OMW0A2
+Type: Managed
+Namespace: fleetcor_ete
+Versions: none yet
 ```
 
-Do not invent this id.
+Do not run `sf package create` again for the first release unless the team decides to abandon this package record.
 
-Copy the returned alias/id into `sfdx-project.json`.
-
-Expected shape:
+The current `sfdx-project.json` should contain:
 
 ```json
 {
+  "namespace": "fleetcor_ete",
   "packageAliases": {
-    "E2E Application": "0Ho..."
+    "ETE_Fleetcor_Framework": "0HoIS0000008OMW0A2"
   }
 }
 ```
 
 ## 3. Namespace
 
-For a managed package, namespace must be registered and linked through Salesforce setup/Dev Hub ownership.
-
-The current `sfdx-project.json` has:
-
-```json
-"namespace": ""
-```
-
-Set namespace only after it is officially registered.
-
-Example shape:
-
-```json
-"namespace": "e2e"
-```
+The selected namespace is `fleetcor_ete`.
 
 Do not add an `E2E_` prefix to metadata names when namespace is used.
 
@@ -119,10 +100,10 @@ After package id/alias is present, create the first package version:
 
 ```bash
 sf package version create \
-  --package "E2E Application" \
+  --package "ETE_Fleetcor_Framework" \
   --installation-key-bypass \
   --wait 30 \
-  --target-dev-hub <DEV_HUB_ALIAS>
+  --target-dev-hub Zankoav
 ```
 
 For a managed package version that must be installable outside the Dev Hub lifecycle, include the required Salesforce packaging flags for the release process used by the company.
@@ -142,8 +123,8 @@ Expected shape:
 ```json
 {
   "packageAliases": {
-    "E2E Application": "0Ho...",
-    "E2E Application@0.1.0-1": "04t..."
+    "ETE_Fleetcor_Framework": "0HoIS0000008OMW0A2",
+    "ETE_Fleetcor_Framework@0.1.0-1": "04t..."
   }
 }
 ```
@@ -156,7 +137,7 @@ Command shape:
 
 ```bash
 sf package install \
-  --package "E2E Application@0.1.0-1" \
+  --package "ETE_Fleetcor_Framework@0.1.0-1" \
   --target-org <INSTALL_TEST_ORG_ALIAS> \
   --wait 30 \
   --publish-wait 30
@@ -176,8 +157,8 @@ Command shape:
 
 ```bash
 sf package version promote \
-  --package "E2E Application@0.1.0-1" \
-  --target-dev-hub <DEV_HUB_ALIAS>
+  --package "ETE_Fleetcor_Framework@0.1.0-1" \
+  --target-dev-hub Zankoav
 ```
 
 Promotion makes the package version releasable according to Salesforce 2GP rules.

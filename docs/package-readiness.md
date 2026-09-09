@@ -11,20 +11,19 @@ force-app
 The package configuration in `sfdx-project.json` defines:
 
 - package name: `E2E Application`
+- package alias: `ETE_Fleetcor_Framework`
+- package id: `0HoIS0000008OMW0A2`
 - initial version name: `ver 0.1`
 - initial version number: `0.1.0.NEXT`
+- namespace: `fleetcor_ete`
 
-The project does not define a package id or package alias yet.
-
-Those values should be added only after the package is created in Dev Hub.
+The project reuses the existing Dev Hub package record `ETE_Fleetcor_Framework`.
 
 ## Namespace
 
-The namespace is currently empty.
+The namespace is `fleetcor_ete`.
 
-For a managed package, the namespace should be set after it is registered and connected to the Dev Hub/package.
-
-Do not invent a namespace in source before the package ownership is decided in Salesforce.
+It is already associated with the selected managed package record in Dev Hub.
 
 ## Test Matrix
 
@@ -44,4 +43,4 @@ Use `package-creation-plan.md` when the team is ready to create package records 
 
 ## Guiding Principle
 
-Package metadata should be explicit enough to build from, but should not contain invented Salesforce ids.
+Package metadata should be explicit enough to build from, and package ids should only come from Salesforce CLI/Dev Hub output.

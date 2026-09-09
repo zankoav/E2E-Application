@@ -44,7 +44,7 @@ Do not run all local tests unless explicitly required.
 
 The package directory is `force-app`.
 
-`sfdx-project.json` is prepared for an initial `0.1.0.NEXT` package version, but package aliases and namespace should be added only after package creation/registration in Salesforce.
+`sfdx-project.json` is prepared for the existing managed package record `ETE_Fleetcor_Framework` with namespace `fleetcor_ete` and initial version `0.1.0.NEXT`.
 
 ## Original Salesforce DX Notes
 
