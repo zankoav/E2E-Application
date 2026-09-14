@@ -1,6 +1,7 @@
 public class GetSnapshotCommand {
     public String applicationId;
     public String consumerKey;
+    public String resumeToken;
 
     public GetSnapshotCommand() {
     }

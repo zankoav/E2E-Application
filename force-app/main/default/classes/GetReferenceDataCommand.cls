@@ -2,6 +2,7 @@ public class GetReferenceDataCommand {
     public String applicationId;
     public String consumerKey;
     public String stepKey;
+    public String resumeToken;
     public List<String> referenceKeys = new List<String>();
 
     public GetReferenceDataCommand() {

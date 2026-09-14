@@ -35,6 +35,22 @@ public class DefinitionValidator {
         if (!definition.steps.containsKey(scenario.initialStep)) {
             throw new FrameworkException('Scenario initial step does not exist. Scenario: ' + scenario.key + ', Step: ' + scenario.initialStep);
         }
+        validatePublicAccess(scenario);
+    }
+
+    private void validatePublicAccess(ProcessDefinition.ScenarioDefinition scenario) {
+        if (scenario.publicAccess == null || scenario.publicAccess.enabled != true) {
+            return;
+        }
+        if (scenario.publicAccess.idleTimeoutMinutes == null || scenario.publicAccess.idleTimeoutMinutes <= 0) {
+            throw new FrameworkException('Scenario publicAccess idleTimeoutMinutes must be greater than zero. Scenario: ' + scenario.key);
+        }
+        if (
+            scenario.publicAccess.maxLifetimeMinutes == null ||
+            scenario.publicAccess.maxLifetimeMinutes < scenario.publicAccess.idleTimeoutMinutes
+        ) {
+            throw new FrameworkException('Scenario publicAccess maxLifetimeMinutes must be greater than or equal to idleTimeoutMinutes. Scenario: ' + scenario.key);
+        }
     }
 
     private void validateSteps(ProcessDefinition definition) {

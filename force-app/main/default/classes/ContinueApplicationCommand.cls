@@ -2,6 +2,7 @@ public class ContinueApplicationCommand {
     public String applicationId;
     public String consumerKey;
     public String stepKey;
+    public String resumeToken;
 
     public ContinueApplicationCommand() {
     }

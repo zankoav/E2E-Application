@@ -1,0 +1,150 @@
+public without sharing class PublicApplicationAccessService {
+    private ApplicationStateStore stateStore;
+
+    public class AccessGrant {
+        public String resumeToken;
+        public Datetime expiresAt;
+    }
+
+    public PublicApplicationAccessService() {
+        this(new ApplicationStateStore());
+    }
+
+    @TestVisible
+    private PublicApplicationAccessService(ApplicationStateStore stateStore) {
+        this.stateStore = stateStore == null ? new ApplicationStateStore() : stateStore;
+    }
+
+    public Boolean isPublicAccessRequired() {
+        return UserInfo.getUserType() == 'Guest';
+    }
+
+    public Application__c findExistingApplication(InitApplicationCommand command) {
+        if (command == null || String.isBlank(command.externalReference)) {
+            return null;
+        }
+
+        List<Application__c> applications = [
+            SELECT Id, Name, Process_Key__c, Scenario_Key__c, Current_Step_Key__c, Status__c,
+                Conversion_Status__c, Consumer_Key__c, External_Reference__c, Definition_Version__c,
+                Started_At__c, Completed_At__c, Converted_At__c, Public_Access_Key_Hash__c,
+                Public_Access_Expires_At__c, Public_Access_Max_Expires_At__c, Public_Access_Last_Used_At__c
+            FROM Application__c
+            WHERE Process_Key__c = :command.processKey
+            AND Scenario_Key__c = :command.scenarioKey
+            AND Consumer_Key__c = :command.consumerKey
+            AND External_Reference__c = :command.externalReference
+            LIMIT 1
+        ];
+
+        return applications.isEmpty() ? null : applications[0];
+    }
+
+    public Application__c getApplication(Id applicationId) {
+        if (applicationId == null) {
+            throw new FrameworkException('Application id is required.');
+        }
+
+        List<Application__c> applications = [
+            SELECT Id, Name, Process_Key__c, Scenario_Key__c, Current_Step_Key__c, Status__c,
+                Conversion_Status__c, Consumer_Key__c, External_Reference__c, Definition_Version__c,
+                Started_At__c, Completed_At__c, Converted_At__c, Public_Access_Key_Hash__c,
+                Public_Access_Expires_At__c, Public_Access_Max_Expires_At__c, Public_Access_Last_Used_At__c
+            FROM Application__c
+            WHERE Id = :applicationId
+            LIMIT 1
+        ];
+
+        if (applications.isEmpty()) {
+            throw new FrameworkException('Application was not found. Id: ' + String.valueOf(applicationId));
+        }
+        return applications[0];
+    }
+
+    public void requirePublicInitAllowed(ProcessDefinition.ScenarioDefinition scenario) {
+        if (isPublicAccessRequired() && !isPublicAccessEnabled(scenario)) {
+            throw new FrameworkException('Public access is not enabled for Scenario. Scenario: ' + getScenarioKey(scenario));
+        }
+    }
+
+    public AccessGrant issue(Application__c application, ProcessDefinition.ScenarioDefinition scenario) {
+        if (!isPublicAccessEnabled(scenario)) {
+            return null;
+        }
+
+        Datetime nowValue = System.now();
+        String resumeToken = generateResumeToken();
+        application.Public_Access_Key_Hash__c = hashToken(resumeToken);
+        application.Public_Access_Last_Used_At__c = nowValue;
+        application.Public_Access_Expires_At__c = nowValue.addMinutes(scenario.publicAccess.idleTimeoutMinutes);
+        application.Public_Access_Max_Expires_At__c = nowValue.addMinutes(scenario.publicAccess.maxLifetimeMinutes);
+        stateStore.savePublicAccess(application);
+
+        AccessGrant grant = new AccessGrant();
+        grant.resumeToken = resumeToken;
+        grant.expiresAt = application.Public_Access_Expires_At__c;
+        return grant;
+    }
+
+    public AccessGrant validateAndRefresh(
+        Application__c application,
+        ProcessDefinition.ScenarioDefinition scenario,
+        String resumeToken
+    ) {
+        Boolean shouldValidate = isPublicAccessRequired() || !String.isBlank(resumeToken);
+        if (!shouldValidate) {
+            return null;
+        }
+        if (!isPublicAccessEnabled(scenario)) {
+            throw new FrameworkException('Public access is not enabled for Scenario. Scenario: ' + getScenarioKey(scenario));
+        }
+        if (String.isBlank(resumeToken)) {
+            throw new FrameworkException('Application resume token is required.');
+        }
+        if (application == null || String.isBlank(application.Public_Access_Key_Hash__c)) {
+            throw new FrameworkException('Application public access token was not issued.');
+        }
+        if (application.Public_Access_Key_Hash__c != hashToken(resumeToken)) {
+            throw new FrameworkException('Application resume token is invalid.');
+        }
+
+        Datetime nowValue = System.now();
+        if (application.Public_Access_Expires_At__c == null || application.Public_Access_Expires_At__c <= nowValue) {
+            throw new FrameworkException('Application resume token is expired.');
+        }
+        if (application.Public_Access_Max_Expires_At__c == null || application.Public_Access_Max_Expires_At__c <= nowValue) {
+            throw new FrameworkException('Application resume token max lifetime is expired.');
+        }
+
+        Datetime refreshedExpiresAt = nowValue.addMinutes(scenario.publicAccess.idleTimeoutMinutes);
+        if (refreshedExpiresAt > application.Public_Access_Max_Expires_At__c) {
+            refreshedExpiresAt = application.Public_Access_Max_Expires_At__c;
+        }
+
+        application.Public_Access_Last_Used_At__c = nowValue;
+        application.Public_Access_Expires_At__c = refreshedExpiresAt;
+        stateStore.savePublicAccess(application);
+
+        AccessGrant grant = new AccessGrant();
+        grant.expiresAt = application.Public_Access_Expires_At__c;
+        return grant;
+    }
+
+    private Boolean isPublicAccessEnabled(ProcessDefinition.ScenarioDefinition scenario) {
+        return scenario != null && scenario.publicAccess != null && scenario.publicAccess.enabled == true;
+    }
+
+    private String getScenarioKey(ProcessDefinition.ScenarioDefinition scenario) {
+        return scenario == null ? null : scenario.key;
+    }
+
+    @TestVisible
+    private String generateResumeToken() {
+        return EncodingUtil.convertToHex(Crypto.generateAesKey(256));
+    }
+
+    @TestVisible
+    private String hashToken(String resumeToken) {
+        return EncodingUtil.convertToHex(Crypto.generateDigest('SHA-256', Blob.valueOf(resumeToken)));
+    }
+}

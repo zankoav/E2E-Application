@@ -6,6 +6,7 @@ public inherited sharing class ContinueApplicationHandler {
     private RuleEngine ruleEngine;
     private StepNavigator stepNavigator;
     private ConsumerAccessService consumerAccessService;
+    private PublicApplicationAccessService publicAccessService;
 
     public ContinueApplicationHandler() {
         this(
@@ -32,12 +33,13 @@ public inherited sharing class ContinueApplicationHandler {
         this.ruleEngine = ruleEngine;
         this.stepNavigator = new StepNavigator(ruleEngine);
         this.consumerAccessService = new ConsumerAccessService();
+        this.publicAccessService = new PublicApplicationAccessService();
     }
 
     public CommandResult execute(ContinueApplicationCommand command) {
         validateCommand(command);
 
-        Application__c application = stateStore.getApplication((Id) command.applicationId);
+        Application__c application = getApplication(command.applicationId);
         validateApplication(command, application);
 
         ProcessDefinition definition = definitionResolver.resolveActive(application.Process_Key__c);
@@ -45,6 +47,11 @@ public inherited sharing class ContinueApplicationHandler {
         if (scenario == null) {
             throw new FrameworkException('Scenario was not found. Scenario: ' + application.Scenario_Key__c);
         }
+        PublicApplicationAccessService.AccessGrant accessGrant = publicAccessService.validateAndRefresh(
+            application,
+            scenario,
+            command.resumeToken
+        );
 
         String currentStepKey = String.isBlank(command.stepKey)
             ? application.Current_Step_Key__c
@@ -85,7 +92,7 @@ public inherited sharing class ContinueApplicationHandler {
                 'Step transition is still blocked.',
                 targetAvailabilityResult
             );
-            return CommandResult.blocked(buildSnapshot(application, definition), targetAvailabilityResult);
+            return CommandResult.blocked(buildSnapshot(application, definition), targetAvailabilityResult).withAccess(accessGrant);
         }
 
         RuleResult transitionResult = ruleEngine.evaluateStepTransitionRules(context);
@@ -96,7 +103,7 @@ public inherited sharing class ContinueApplicationHandler {
                 'Step transition is still blocked.',
                 transitionResult
             );
-            return CommandResult.blocked(buildSnapshot(application, definition), transitionResult);
+            return CommandResult.blocked(buildSnapshot(application, definition), transitionResult).withAccess(accessGrant);
         }
 
         Boolean completed = isFinishStep(definition, nextStepKey) || String.isBlank(nextStepKey);
@@ -117,7 +124,13 @@ public inherited sharing class ContinueApplicationHandler {
             );
         }
 
-        return CommandResult.ok(buildSnapshot(application, definition));
+        return CommandResult.ok(buildSnapshot(application, definition)).withAccess(accessGrant);
+    }
+
+    private Application__c getApplication(String applicationId) {
+        return publicAccessService.isPublicAccessRequired()
+            ? publicAccessService.getApplication((Id) applicationId)
+            : stateStore.getApplication((Id) applicationId);
     }
 
     private StepRuntimeContext buildRuntimeContext(

@@ -4,6 +4,7 @@ public inherited sharing class RestartJobHandler {
     private ApplicationEventStore eventStore;
     private SnapshotBuilder snapshotBuilder;
     private ConsumerAccessService consumerAccessService;
+    private PublicApplicationAccessService publicAccessService;
 
     public RestartJobHandler() {
         this(
@@ -26,22 +27,35 @@ public inherited sharing class RestartJobHandler {
         this.eventStore = eventStore;
         this.snapshotBuilder = snapshotBuilder;
         this.consumerAccessService = new ConsumerAccessService();
+        this.publicAccessService = new PublicApplicationAccessService();
     }
 
     public CommandResult execute(RestartJobCommand command) {
         validateCommand(command);
 
-        Application__c application = stateStore.getApplication((Id) command.applicationId);
+        Application__c application = getApplication(command.applicationId);
         validateApplication(command, application);
 
         Application_Job__c job = stateStore.getApplicationJob(application.Id, command.jobKey);
         validateJobCanRestart(job);
 
         ProcessDefinition definition = definitionResolver.resolveActive(application.Process_Key__c);
+        ProcessDefinition.ScenarioDefinition scenario = definition.getScenario(application.Scenario_Key__c);
+        PublicApplicationAccessService.AccessGrant accessGrant = publicAccessService.validateAndRefresh(
+            application,
+            scenario,
+            command.resumeToken
+        );
         stateStore.restartJob(job);
         eventStore.createEvent(application.Id, FrameworkConstants.EVENT_JOB_RESTARTED, 'Job restarted.', job);
 
-        return CommandResult.ok(buildSnapshot(application, definition));
+        return CommandResult.ok(buildSnapshot(application, definition)).withAccess(accessGrant);
+    }
+
+    private Application__c getApplication(String applicationId) {
+        return publicAccessService.isPublicAccessRequired()
+            ? publicAccessService.getApplication((Id) applicationId)
+            : stateStore.getApplication((Id) applicationId);
     }
 
     private ApplicationSnapshot buildSnapshot(Application__c application, ProcessDefinition definition) {

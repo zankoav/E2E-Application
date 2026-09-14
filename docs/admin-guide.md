@@ -89,8 +89,11 @@ Set:
 - `Active__c`
 - `Allowed_Process_Keys__c`
 - `Allowed_Scenario_Keys__c`
+- `Allowed_Origins__c` when browser origins should be restricted by the framework
 
 Consumers are trusted API clients such as web portals, mobile apps, partner sites, or internal integrations.
+
+For public websites, also enable scenario `publicAccess` in the process definition and configure `idleTimeoutMinutes` and `maxLifetimeMinutes`.
 
 ## Add Integrations
 
@@ -149,11 +152,32 @@ Example:
 
 ## Assign Permissions
 
-Assign `E2E_Runtime` to the runtime/API user.
+Assign `E2E_Runtime` to an authenticated runtime/API user.
 
 Then grant that user access to any mapped CRM target objects and fields outside the package permission set.
 
 For example, if conversion creates Account and Contact records, the consuming org must grant Account and Contact access separately.
+
+For Salesforce Site Guest User access, assign `E2E_Public_Access` or copy the same permissions into the Site Guest User profile.
+
+`E2E_Public_Access` is intended only for public Application runtime commands:
+
+- init application
+- get snapshot
+- get reference data
+- submit step
+- continue application
+- run/restart/check jobs
+
+It intentionally does not grant access to `ConvertApplications`.
+
+Public website access must still pass framework checks:
+
+- active Consumer Definition
+- allowed process/scenario
+- optional allowed browser origin
+- scenario `publicAccess`
+- valid Application `resumeToken`
 
 ## Validate Changes
 

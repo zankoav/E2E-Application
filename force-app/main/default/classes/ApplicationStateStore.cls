@@ -240,7 +240,8 @@ public inherited sharing class ApplicationStateStore {
         return [
             SELECT Id, Name, Process_Key__c, Scenario_Key__c, Current_Step_Key__c, Status__c,
                 Conversion_Status__c, Consumer_Key__c, External_Reference__c, Definition_Version__c,
-                Started_At__c, Completed_At__c, Converted_At__c
+                Started_At__c, Completed_At__c, Converted_At__c, Public_Access_Key_Hash__c,
+                Public_Access_Expires_At__c, Public_Access_Max_Expires_At__c, Public_Access_Last_Used_At__c
             FROM Application__c
             WHERE Process_Key__c = :command.processKey
             AND Status__c = :FrameworkConstants.APPLICATION_STATUS_COMPLETED
@@ -286,6 +287,20 @@ public inherited sharing class ApplicationStateStore {
             return;
         }
         insert recordLinks;
+    }
+
+    public void savePublicAccess(Application__c application) {
+        if (application == null || application.Id == null) {
+            throw new FrameworkException('Application is required.');
+        }
+
+        update new Application__c(
+            Id = application.Id,
+            Public_Access_Key_Hash__c = application.Public_Access_Key_Hash__c,
+            Public_Access_Expires_At__c = application.Public_Access_Expires_At__c,
+            Public_Access_Max_Expires_At__c = application.Public_Access_Max_Expires_At__c,
+            Public_Access_Last_Used_At__c = application.Public_Access_Last_Used_At__c
+        );
     }
 
     public Map<String, Application_Record_Link__c> getRecordLinksByRuntimeKey(Set<Id> applicationIds) {
@@ -373,7 +388,8 @@ public inherited sharing class ApplicationStateStore {
         List<Application__c> applications = [
             SELECT Id, Name, Process_Key__c, Scenario_Key__c, Current_Step_Key__c, Status__c,
                 Conversion_Status__c, Consumer_Key__c, External_Reference__c, Definition_Version__c,
-                Started_At__c, Completed_At__c, Converted_At__c
+                Started_At__c, Completed_At__c, Converted_At__c, Public_Access_Key_Hash__c,
+                Public_Access_Expires_At__c, Public_Access_Max_Expires_At__c, Public_Access_Last_Used_At__c
             FROM Application__c
             WHERE Process_Key__c = :command.processKey
             AND Scenario_Key__c = :command.scenarioKey

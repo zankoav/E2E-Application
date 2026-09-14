@@ -78,4 +78,22 @@ private class ConsumerAccessServiceTest {
             Assert.isTrue(ex.getMessage().contains('Application'));
         }
     }
+
+    @IsTest
+    static void consumerDefinitionAllowsConfiguredOrigin() {
+        ConsumerDefinition definition = new ConsumerDefinition();
+        definition.active = true;
+        definition.allowedOrigins.add('https://example.com');
+
+        Assert.areEqual(true, definition.canAccessOrigin('https://example.com'));
+        Assert.areEqual(false, definition.canAccessOrigin('https://blocked.example.com'));
+    }
+
+    @IsTest
+    static void consumerDefinitionAllowsAnyOriginWhenNotConfigured() {
+        ConsumerDefinition definition = new ConsumerDefinition();
+        definition.active = true;
+
+        Assert.areEqual(true, definition.canAccessOrigin('https://example.com'));
+    }
 }

@@ -121,6 +121,31 @@ private class ProcessDefinitionTest {
     }
 
     @IsTest
+    static void acceptsScenarioPublicAccessSettings() {
+        String definitionJson = '{"process":{"key":"fuelCardApplication","version":"1.0.0"},"scenarios":{"newCustomer":{"initialStep":"contactDetails","steps":["contactDetails"],"publicAccess":{"enabled":true,"idleTimeoutMinutes":30,"maxLifetimeMinutes":1440}}},"steps":{"contactDetails":{"label":"Contact Details"}}}';
+
+        ProcessDefinition definition = ProcessDefinition.parse(definitionJson);
+
+        new DefinitionValidator().validate(definition);
+        Assert.areEqual(true, definition.getScenario('newCustomer').publicAccess.enabled);
+        Assert.areEqual(30, definition.getScenario('newCustomer').publicAccess.idleTimeoutMinutes);
+        Assert.areEqual(1440, definition.getScenario('newCustomer').publicAccess.maxLifetimeMinutes);
+    }
+
+    @IsTest
+    static void rejectsScenarioPublicAccessWithoutValidTimeouts() {
+        String definitionJson = '{"process":{"key":"fuelCardApplication","version":"1.0.0"},"scenarios":{"newCustomer":{"initialStep":"contactDetails","steps":["contactDetails"],"publicAccess":{"enabled":true,"idleTimeoutMinutes":30,"maxLifetimeMinutes":10}}},"steps":{"contactDetails":{"label":"Contact Details"}}}';
+
+        try {
+            ProcessDefinition definition = ProcessDefinition.parse(definitionJson);
+            new DefinitionValidator().validate(definition);
+            Assert.fail('Expected definition validation to fail.');
+        } catch (FrameworkException ex) {
+            Assert.isTrue(ex.getMessage().contains('maxLifetimeMinutes'));
+        }
+    }
+
+    @IsTest
     static void rejectsStepReferenceDataWithoutIntegrationKey() {
         String definitionJson = '{"process":{"key":"fuelCardApplication","version":"1.0.0"},"scenarios":{"newCustomer":{"initialStep":"products","steps":["products"]}},"steps":{"products":{"label":"Products","referenceData":{"availableProducts":{}}}}}';
 

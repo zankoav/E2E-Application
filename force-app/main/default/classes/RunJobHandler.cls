@@ -5,6 +5,7 @@ public inherited sharing class RunJobHandler {
     private SnapshotBuilder snapshotBuilder;
     private JobEngine jobEngine;
     private ConsumerAccessService consumerAccessService;
+    private PublicApplicationAccessService publicAccessService;
 
     public RunJobHandler() {
         this(
@@ -30,27 +31,34 @@ public inherited sharing class RunJobHandler {
         this.snapshotBuilder = snapshotBuilder;
         this.jobEngine = jobEngine;
         this.consumerAccessService = new ConsumerAccessService();
+        this.publicAccessService = new PublicApplicationAccessService();
     }
 
     public CommandResult execute(RunJobCommand command) {
         validateCommand(command);
 
-        Application__c application = stateStore.getApplication((Id) command.applicationId);
+        Application__c application = getApplication(command.applicationId);
         validateApplication(command, application);
 
         Application_Job__c job = stateStore.getApplicationJob(application.Id, command.jobKey);
         ProcessDefinition definition = definitionResolver.resolveActive(application.Process_Key__c);
+        ProcessDefinition.ScenarioDefinition scenario = definition.getScenario(application.Scenario_Key__c);
+        PublicApplicationAccessService.AccessGrant accessGrant = publicAccessService.validateAndRefresh(
+            application,
+            scenario,
+            command.resumeToken
+        );
 
         validateJobCanRun(job);
 
         if (getExecutionMode(job) == FrameworkConstants.JOB_EXECUTION_MODE_SYNC_CALLOUT) {
-            return runSyncCalloutJob(application, definition, job);
+            return runSyncCalloutJob(application, definition, job).withAccess(accessGrant);
         }
         if (getExecutionMode(job) == FrameworkConstants.JOB_EXECUTION_MODE_ASYNC) {
-            return startAsyncJob(application, definition, job);
+            return startAsyncJob(application, definition, job).withAccess(accessGrant);
         }
         if (getExecutionMode(job) == FrameworkConstants.JOB_EXECUTION_MODE_SYNC) {
-            return runSyncJob(application, definition, job);
+            return runSyncJob(application, definition, job).withAccess(accessGrant);
         }
 
         throw new FrameworkException('Unsupported Job execution mode: ' + job.Execution_Mode__c);
@@ -59,6 +67,12 @@ public inherited sharing class RunJobHandler {
     private CommandResult runSyncJob(Application__c application, ProcessDefinition definition, Application_Job__c job) {
         startProcessing(application, job);
         return finishJob(application, definition, job, executeJob(job, definition));
+    }
+
+    private Application__c getApplication(String applicationId) {
+        return publicAccessService.isPublicAccessRequired()
+            ? publicAccessService.getApplication((Id) applicationId)
+            : stateStore.getApplication((Id) applicationId);
     }
 
     private CommandResult runSyncCalloutJob(Application__c application, ProcessDefinition definition, Application_Job__c job) {

@@ -3,6 +3,7 @@ public class ConsumerDefinition {
     public Boolean active;
     public Set<String> allowedProcessKeys = new Set<String>();
     public Set<String> allowedScenarioKeys = new Set<String>();
+    public Set<String> allowedOrigins = new Set<String>();
 
     public Boolean canAccessProcess(String processKey) {
         return active == true && isAllowed(allowedProcessKeys, processKey);
@@ -10,6 +11,10 @@ public class ConsumerDefinition {
 
     public Boolean canAccessScenario(String processKey, String scenarioKey) {
         return active == true && isAllowed(allowedScenarioKeys, processKey + ':' + scenarioKey);
+    }
+
+    public Boolean canAccessOrigin(String origin) {
+        return active == true && (allowedOrigins.isEmpty() || isAllowed(allowedOrigins, origin));
     }
 
     private Boolean isAllowed(Set<String> allowedValues, String value) {

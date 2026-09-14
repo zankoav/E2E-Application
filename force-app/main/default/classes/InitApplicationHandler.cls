@@ -4,6 +4,7 @@ public inherited sharing class InitApplicationHandler {
     private ApplicationEventStore eventStore;
     private SnapshotBuilder snapshotBuilder;
     private ConsumerAccessService consumerAccessService;
+    private PublicApplicationAccessService publicAccessService;
 
     public InitApplicationHandler() {
         this.definitionResolver = new DefinitionResolver();
@@ -11,6 +12,7 @@ public inherited sharing class InitApplicationHandler {
         this.eventStore = new ApplicationEventStore();
         this.snapshotBuilder = new SnapshotBuilder();
         this.consumerAccessService = new ConsumerAccessService();
+        this.publicAccessService = new PublicApplicationAccessService();
     }
 
     public CommandResult execute(InitApplicationCommand command) {
@@ -19,10 +21,24 @@ public inherited sharing class InitApplicationHandler {
         ProcessDefinition definition = definitionResolver.resolveActive(command.processKey);
         ProcessDefinition.ScenarioDefinition scenario = definition.getScenario(command.scenarioKey);
         consumerAccessService.validateInitAccess(command.consumerKey, command.processKey, command.scenarioKey, scenario);
+        publicAccessService.requirePublicInitAllowed(scenario);
 
-        ApplicationStateStore.InitResult initResult = stateStore.initApplication(command, definition);
-        Application__c application = initResult.application;
-        if (initResult.created) {
+        Application__c application;
+        Boolean created = false;
+        if (publicAccessService.isPublicAccessRequired()) {
+            application = publicAccessService.findExistingApplication(command);
+        }
+        if (application == null) {
+            ApplicationStateStore.InitResult initResult = stateStore.initApplication(command, definition);
+            application = initResult.application;
+            created = initResult.created;
+        }
+
+        PublicApplicationAccessService.AccessGrant accessGrant = created
+            ? publicAccessService.issue(application, scenario)
+            : publicAccessService.validateAndRefresh(application, scenario, command.resumeToken);
+
+        if (created) {
             eventStore.createEvent(
                 application.Id,
                 FrameworkConstants.EVENT_APPLICATION_INITIALIZED,
@@ -45,7 +61,7 @@ public inherited sharing class InitApplicationHandler {
             null
         );
 
-        return CommandResult.ok(snapshot);
+        return CommandResult.ok(snapshot).withAccess(accessGrant);
     }
 
     private void validateCommand(InitApplicationCommand command) {

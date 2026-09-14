@@ -3,6 +3,7 @@ public class CommandResult {
     public ApplicationSnapshot snapshot;
     public ApplicationSnapshot.JobInfo job;
     public ConversionResult conversion;
+    public PublicAccessInfo access;
     public Map<String, Object> references;
     public List<String> errors = new List<String>();
     public List<ErrorInfo> errorDetails = new List<ErrorInfo>();
@@ -60,6 +61,20 @@ public class CommandResult {
         result.snapshot = snapshot;
         result.addError(ErrorInfoMapper.fromRuleResult(ruleResult));
         return result;
+    }
+
+    public CommandResult withAccess(PublicApplicationAccessService.AccessGrant grant) {
+        if (grant != null) {
+            this.access = new PublicAccessInfo();
+            this.access.resumeToken = grant.resumeToken;
+            this.access.expiresAt = grant.expiresAt;
+        }
+        return this;
+    }
+
+    public class PublicAccessInfo {
+        public String resumeToken;
+        public Datetime expiresAt;
     }
 
     private void addError(ErrorInfo errorInfo) {

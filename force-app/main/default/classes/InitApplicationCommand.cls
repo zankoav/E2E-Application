@@ -3,6 +3,7 @@ public class InitApplicationCommand {
     public String processKey;
     public String scenarioKey;
     public String externalReference;
+    public String resumeToken;
 
     public InitApplicationCommand() {
     }

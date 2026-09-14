@@ -2,6 +2,7 @@ global class SubmitStepCommand {
     global String applicationId;
     global String consumerKey;
     global String stepKey;
+    global String resumeToken;
     global Map<String, Object> data = new Map<String, Object>();
 
     global SubmitStepCommand() {
@@ -17,6 +18,7 @@ global class SubmitStepCommand {
         command.applicationId = getString(rawCommand, 'applicationId');
         command.consumerKey = getString(rawCommand, 'consumerKey');
         command.stepKey = getString(rawCommand, 'stepKey');
+        command.resumeToken = getString(rawCommand, 'resumeToken');
 
         Object rawData = rawCommand.get('data');
         if (rawData instanceof Map<String, Object>) {

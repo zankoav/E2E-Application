@@ -12,6 +12,13 @@ global class ProcessDefinition {
         global String initialStep;
         global List<String> steps = new List<String>();
         global List<String> consumerKeys = new List<String>();
+        global PublicAccessDefinition publicAccess = new PublicAccessDefinition();
+    }
+
+    global class PublicAccessDefinition {
+        global Boolean enabled = false;
+        global Integer idleTimeoutMinutes;
+        global Integer maxLifetimeMinutes;
     }
 
     global ScenarioDefinition getScenario(String scenarioKey) {
@@ -45,6 +52,7 @@ global class ProcessDefinition {
             scenario.initialStep = getString(scenarioValue, 'initialStep');
             scenario.steps = getStringList(scenarioValue, 'steps');
             scenario.consumerKeys = getStringList(scenarioValue, 'consumerKeys');
+            scenario.publicAccess = getPublicAccessDefinition(scenarioValue);
             definition.scenarios.put(scenarioKey, scenario);
         }
 
@@ -74,5 +82,28 @@ global class ProcessDefinition {
             values.add(String.valueOf(rawValue));
         }
         return values;
+    }
+
+    private static PublicAccessDefinition getPublicAccessDefinition(Map<String, Object> scenarioValue) {
+        PublicAccessDefinition publicAccess = new PublicAccessDefinition();
+        Map<String, Object> rawPublicAccess = getObjectMap(scenarioValue, 'publicAccess');
+        if (rawPublicAccess.isEmpty()) {
+            return publicAccess;
+        }
+
+        publicAccess.enabled = getBoolean(rawPublicAccess, 'enabled');
+        publicAccess.idleTimeoutMinutes = getInteger(rawPublicAccess, 'idleTimeoutMinutes');
+        publicAccess.maxLifetimeMinutes = getInteger(rawPublicAccess, 'maxLifetimeMinutes');
+        return publicAccess;
+    }
+
+    private static Boolean getBoolean(Map<String, Object> source, String key) {
+        Object value = source.get(key);
+        return value == null ? false : Boolean.valueOf(String.valueOf(value));
+    }
+
+    private static Integer getInteger(Map<String, Object> source, String key) {
+        Object value = source.get(key);
+        return value == null ? null : Integer.valueOf(String.valueOf(value));
     }
 }

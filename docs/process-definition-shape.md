@@ -83,6 +83,36 @@ A scenario can have a different step list, step order, rules, jobs, mappings, an
 
 The primary trusted consumer boundary is `Consumer_Definition__mdt`. Scenario `consumerKeys` can narrow access for a specific scenario after the consumer has already been recognized as active and trusted.
 
+`publicAccess` is optional and enables resume-token access for public websites or other clients that cannot safely hold a Salesforce access token.
+
+Timeout values are configured in minutes:
+
+```json
+{
+  "scenarios": {
+    "newCustomer": {
+      "label": "New Customer",
+      "initialStep": "contactDetails",
+      "steps": [
+        "contactDetails",
+        "finish"
+      ],
+      "publicAccess": {
+        "enabled": true,
+        "idleTimeoutMinutes": 60,
+        "maxLifetimeMinutes": 10080
+      }
+    }
+  }
+}
+```
+
+`idleTimeoutMinutes` is a sliding timeout. Each valid request can extend Application access.
+
+`maxLifetimeMinutes` is the absolute cap from token issue time.
+
+For Salesforce Site Guest User requests, public access must be enabled for the scenario and the request must include the valid `resumeToken` after the Application has been initialized.
+
 ## Steps
 
 Steps define process stages.

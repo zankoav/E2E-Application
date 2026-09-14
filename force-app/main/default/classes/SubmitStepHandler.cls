@@ -7,6 +7,7 @@ public inherited sharing class SubmitStepHandler {
     private JobEngine jobEngine;
     private StepNavigator stepNavigator;
     private ConsumerAccessService consumerAccessService;
+    private PublicApplicationAccessService publicAccessService;
 
     public SubmitStepHandler() {
         this(
@@ -36,12 +37,13 @@ public inherited sharing class SubmitStepHandler {
         this.jobEngine = jobEngine;
         this.stepNavigator = new StepNavigator(ruleEngine);
         this.consumerAccessService = new ConsumerAccessService();
+        this.publicAccessService = new PublicApplicationAccessService();
     }
 
     public CommandResult execute(SubmitStepCommand command) {
         validateCommand(command);
 
-        Application__c application = stateStore.getApplication((Id) command.applicationId);
+        Application__c application = getApplication(command.applicationId);
         validateApplication(command, application);
 
         ProcessDefinition definition = definitionResolver.resolveActive(application.Process_Key__c);
@@ -49,6 +51,11 @@ public inherited sharing class SubmitStepHandler {
         if (scenario == null) {
             throw new FrameworkException('Scenario was not found. Scenario: ' + application.Scenario_Key__c);
         }
+        PublicApplicationAccessService.AccessGrant accessGrant = publicAccessService.validateAndRefresh(
+            application,
+            scenario,
+            command.resumeToken
+        );
 
         List<Application_Stop_Process__c> activeStopProcesses = stateStore.getActiveStopProcesses(application.Id);
         List<Application_Job__c> currentJobs = stateStore.getApplicationJobs(application.Id);
@@ -64,7 +71,7 @@ public inherited sharing class SubmitStepHandler {
 
         RuleResult validationResult = ruleEngine.evaluateValidationRules(context);
         if (!validationResult.allowed) {
-            return CommandResult.blocked(buildSnapshot(application, definition), validationResult);
+            return CommandResult.blocked(buildSnapshot(application, definition), validationResult).withAccess(accessGrant);
         }
 
         stateStore.submitStepData(application.Id, command.stepKey, command.data);
@@ -89,12 +96,12 @@ public inherited sharing class SubmitStepHandler {
             context.jobs
         );
         if (!targetAvailabilityResult.allowed) {
-            return CommandResult.blocked(buildSnapshot(application, definition), targetAvailabilityResult);
+            return CommandResult.blocked(buildSnapshot(application, definition), targetAvailabilityResult).withAccess(accessGrant);
         }
 
         RuleResult transitionResult = ruleEngine.evaluateStepTransitionRules(context);
         if (!transitionResult.allowed) {
-            return CommandResult.blocked(buildSnapshot(application, definition), transitionResult);
+            return CommandResult.blocked(buildSnapshot(application, definition), transitionResult).withAccess(accessGrant);
         }
 
         Boolean completed = isFinishStep(definition, nextStepKey) || String.isBlank(nextStepKey);
@@ -123,7 +130,13 @@ public inherited sharing class SubmitStepHandler {
             null
         );
 
-        return CommandResult.ok(snapshot);
+        return CommandResult.ok(snapshot).withAccess(accessGrant);
+    }
+
+    private Application__c getApplication(String applicationId) {
+        return publicAccessService.isPublicAccessRequired()
+            ? publicAccessService.getApplication((Id) applicationId)
+            : stateStore.getApplication((Id) applicationId);
     }
 
     private RuleResult evaluateTargetAvailability(

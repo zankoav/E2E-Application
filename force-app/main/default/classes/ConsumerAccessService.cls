@@ -21,6 +21,7 @@ public inherited sharing class ConsumerAccessService {
         }
 
         ConsumerDefinition consumer = resolver.resolveActive(consumerKey);
+        validateRequestOrigin(consumer);
         if (!consumer.canAccessProcess(processKey)) {
             throw new FrameworkException('Consumer is not allowed for Process. Consumer: ' + consumerKey + ', Process: ' + processKey);
         }
@@ -41,6 +42,7 @@ public inherited sharing class ConsumerAccessService {
         }
 
         ConsumerDefinition consumer = resolver.resolveActive(consumerKey);
+        validateRequestOrigin(consumer);
         if (!consumer.canAccessProcess(application.Process_Key__c)) {
             throw new FrameworkException('Consumer is not allowed for Process. Consumer: ' + consumerKey + ', Process: ' + application.Process_Key__c);
         }
@@ -51,8 +53,26 @@ public inherited sharing class ConsumerAccessService {
 
     public void validateProcessAccess(String consumerKey, String processKey) {
         ConsumerDefinition consumer = resolver.resolveActive(consumerKey);
+        validateRequestOrigin(consumer);
         if (!consumer.canAccessProcess(processKey)) {
             throw new FrameworkException('Consumer is not allowed for Process. Consumer: ' + consumerKey + ', Process: ' + processKey);
         }
+    }
+
+    private void validateRequestOrigin(ConsumerDefinition consumer) {
+        String origin = getRequestOrigin();
+        if (String.isBlank(origin)) {
+            return;
+        }
+        if (!consumer.canAccessOrigin(origin)) {
+            throw new FrameworkException('Consumer Origin is not allowed. Origin: ' + origin);
+        }
+    }
+
+    private String getRequestOrigin() {
+        if (RestContext.request == null || RestContext.request.headers == null) {
+            return null;
+        }
+        return RestContext.request.headers.get('Origin');
     }
 }

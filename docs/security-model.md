@@ -1,14 +1,17 @@
 # Security Model
 
-The package exposes a small runtime permission set:
+The package exposes two runtime permission sets:
 
 ```text
 E2E_Runtime
+E2E_Public_Access
 ```
 
-This permission set is intended for an API or runtime user that can run the E2E Application framework.
+`E2E_Runtime` is intended for an authenticated API or runtime user that can run the E2E Application framework.
 
-It grants:
+`E2E_Public_Access` is intended for Salesforce Site Guest User access to public website flows.
+
+They grant:
 
 - Apex access to the REST controller boundary
 - read access to Process, Consumer, and Integration Custom Metadata Types
@@ -19,9 +22,17 @@ It does not grant permissions to mapped CRM target objects such as Account, Cont
 
 Those permissions belong to the consuming org, because mappings can target different objects per process and scenario.
 
+`E2E_Public_Access` intentionally excludes the conversion controller.
+
+Conversion is a backend/admin operation, not a public browser operation.
+
+`E2E_Public_Access` also does not expose `Application__c.Public_Access_Key_Hash__c` as a field permission.
+
+The framework stores only the token hash and returns the raw `resumeToken` only when it is issued.
+
 ## Runtime Objects
 
-The runtime permission set grants access to:
+`E2E_Runtime` grants access to:
 
 - `Application__c`
 - `Application_Data__c`
@@ -30,9 +41,28 @@ The runtime permission set grants access to:
 - `Application_Record_Link__c`
 - `Application_Stop_Process__c`
 
+`E2E_Public_Access` grants access only to public runtime objects:
+
+- `Application__c`
+- `Application_Data__c`
+- `Application_Event__c`
+- `Application_Job__c`
+- `Application_Stop_Process__c`
+
 Delete access is intentionally not granted.
 
 Application state should be corrected through framework commands or controlled admin tools, not by deleting audit/runtime records.
+
+For public website requests, object access is only the technical permission to let Apex run.
+
+The actual Application-level authorization is still enforced by the framework through:
+
+- Consumer Definition
+- process/scenario allowlists
+- optional Origin allowlist
+- scenario public access settings
+- Application `resumeToken`
+- token idle timeout and max lifetime
 
 ## Definition Metadata
 
