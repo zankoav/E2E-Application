@@ -91,6 +91,30 @@ public without sharing class PublicApplicationAccessService {
         return owners[0].Id;
     }
 
+    public Application__c initPublicApplication(InitApplicationCommand command, ProcessDefinition definition, Id ownerId) {
+        ProcessDefinition.ScenarioDefinition scenario = definition.getScenario(command.scenarioKey);
+        if (scenario == null) {
+            throw new FrameworkException('Scenario was not found. Scenario: ' + command.scenarioKey);
+        }
+        if (ownerId == null) {
+            throw new FrameworkException('Public Application owner is required.');
+        }
+
+        Application__c application = new Application__c();
+        application.OwnerId = ownerId;
+        application.Process_Key__c = command.processKey;
+        application.Scenario_Key__c = command.scenarioKey;
+        application.Current_Step_Key__c = scenario.initialStep;
+        application.Status__c = FrameworkConstants.APPLICATION_STATUS_IN_PROGRESS;
+        application.Conversion_Status__c = FrameworkConstants.CONVERSION_STATUS_NOT_READY;
+        application.Consumer_Key__c = command.consumerKey;
+        application.External_Reference__c = command.externalReference;
+        application.Definition_Version__c = definition.version;
+        application.Started_At__c = System.now();
+        insert application;
+        return application;
+    }
+
     public AccessGrant issue(Application__c application, ProcessDefinition.ScenarioDefinition scenario) {
         if (!isPublicAccessEnabled(scenario)) {
             return null;
@@ -102,7 +126,7 @@ public without sharing class PublicApplicationAccessService {
         application.Public_Access_Last_Used_At__c = nowValue;
         application.Public_Access_Expires_At__c = nowValue.addMinutes(scenario.publicAccess.idleTimeoutMinutes);
         application.Public_Access_Max_Expires_At__c = nowValue.addMinutes(scenario.publicAccess.maxLifetimeMinutes);
-        stateStore.savePublicAccess(application);
+        savePublicAccess(application);
 
         AccessGrant grant = new AccessGrant();
         grant.resumeToken = resumeToken;
@@ -147,7 +171,7 @@ public without sharing class PublicApplicationAccessService {
 
         application.Public_Access_Last_Used_At__c = nowValue;
         application.Public_Access_Expires_At__c = refreshedExpiresAt;
-        stateStore.savePublicAccess(application);
+        savePublicAccess(application);
 
         AccessGrant grant = new AccessGrant();
         grant.expiresAt = application.Public_Access_Expires_At__c;
@@ -170,5 +194,15 @@ public without sharing class PublicApplicationAccessService {
     @TestVisible
     private String hashToken(String resumeToken) {
         return EncodingUtil.convertToHex(Crypto.generateDigest('SHA-256', Blob.valueOf(resumeToken)));
+    }
+
+    private void savePublicAccess(Application__c application) {
+        update new Application__c(
+            Id = application.Id,
+            Public_Access_Key_Hash__c = application.Public_Access_Key_Hash__c,
+            Public_Access_Expires_At__c = application.Public_Access_Expires_At__c,
+            Public_Access_Max_Expires_At__c = application.Public_Access_Max_Expires_At__c,
+            Public_Access_Last_Used_At__c = application.Public_Access_Last_Used_At__c
+        );
     }
 }

@@ -35,9 +35,14 @@ public inherited sharing class InitApplicationHandler {
             application = publicAccessService.findExistingApplication(command);
         }
         if (application == null) {
-            ApplicationStateStore.InitResult initResult = stateStore.initApplication(command, definition, applicationOwnerId);
-            application = initResult.application;
-            created = initResult.created;
+            if (publicAccessService.isPublicAccessRequired()) {
+                application = publicAccessService.initPublicApplication(command, definition, applicationOwnerId);
+                created = true;
+            } else {
+                ApplicationStateStore.InitResult initResult = stateStore.initApplication(command, definition);
+                application = initResult.application;
+                created = initResult.created;
+            }
         }
 
         PublicApplicationAccessService.AccessGrant accessGrant = created
