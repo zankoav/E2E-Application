@@ -46,13 +46,4 @@
     </customMetadataTypeAccesses>
     <hasActivationRequired>false</hasActivationRequired>
     <label>E2E Public Access</label>
-    <objectPermissions>
-        <allowCreate>false</allowCreate>
-        <allowDelete>false</allowDelete>
-        <allowEdit>false</allowEdit>
-        <allowRead>true</allowRead>
-        <modifyAllRecords>false</modifyAllRecords>
-        <object>Application__c</object>
-        <viewAllRecords>false</viewAllRecords>
-    </objectPermissions>
 </PermissionSet>

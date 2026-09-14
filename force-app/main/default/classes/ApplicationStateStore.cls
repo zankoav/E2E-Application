@@ -1,4 +1,4 @@
-public inherited sharing class ApplicationStateStore {
+public without sharing class ApplicationStateStore {
     public class InitResult {
         public Application__c application;
         public Boolean created;
