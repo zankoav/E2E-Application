@@ -11,14 +11,19 @@ E2E_Public_Access
 
 `E2E_Public_Access` is intended for Salesforce Site Guest User access to public website flows.
 
-They grant:
+`E2E_Runtime` grants:
 
 - Apex access to the REST controller boundary
 - read access to Process, Consumer, and Integration Custom Metadata Types
 - read/create/edit access to framework runtime objects
 - field access to framework runtime fields
 
-It does not grant permissions to mapped CRM target objects such as Account, Contact, Opportunity, or custom business objects.
+`E2E_Public_Access` grants:
+
+- Apex access to the public REST controller boundary
+- read access to Process, Consumer, and Integration Custom Metadata Types
+
+Neither permission set grants permissions to mapped CRM target objects such as Account, Contact, Opportunity, or custom business objects.
 
 Those permissions belong to the consuming org, because mappings can target different objects per process and scenario.
 
@@ -26,7 +31,7 @@ Those permissions belong to the consuming org, because mappings can target diffe
 
 Conversion is a backend/admin operation, not a public browser operation.
 
-`E2E_Public_Access` also does not expose `Application__c.Public_Access_Key_Hash__c` as a field permission.
+`E2E_Public_Access` does not grant runtime object CRUD/FLS.
 
 The framework stores only the token hash and returns the raw `resumeToken` only when it is issued.
 
@@ -41,19 +46,13 @@ The framework stores only the token hash and returns the raw `resumeToken` only 
 - `Application_Record_Link__c`
 - `Application_Stop_Process__c`
 
-`E2E_Public_Access` grants access only to public runtime objects:
-
-- `Application__c`
-- `Application_Data__c`
-- `Application_Event__c`
-- `Application_Job__c`
-- `Application_Stop_Process__c`
-
 Delete access is intentionally not granted.
 
 Application state should be corrected through framework commands or controlled admin tools, not by deleting audit/runtime records.
 
-For public website requests, object access is only the technical permission to let Apex run.
+For public website requests, the technical permission is Apex REST class access.
+
+The Apex runtime executes framework DML in system context and does not expose direct object access to the Site Guest User.
 
 The actual Application-level authorization is still enforced by the framework through:
 

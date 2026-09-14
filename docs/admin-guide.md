@@ -171,6 +171,10 @@ For Salesforce Site Guest User access, assign `E2E_Public_Access` or copy the sa
 
 It intentionally does not grant access to `ConvertApplications`.
 
+It also does not grant runtime object CRUD/FLS.
+
+The Site Guest User enters only through Apex REST controllers; Application data access is enforced by the framework access layer.
+
 Public website access must still pass framework checks:
 
 - active Consumer Definition
