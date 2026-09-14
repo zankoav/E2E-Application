@@ -5,6 +5,10 @@ public inherited sharing class ApplicationStateStore {
     }
 
     public InitResult initApplication(InitApplicationCommand command, ProcessDefinition definition) {
+        return initApplication(command, definition, null);
+    }
+
+    public InitResult initApplication(InitApplicationCommand command, ProcessDefinition definition, Id ownerId) {
         ProcessDefinition.ScenarioDefinition scenario = definition.getScenario(command.scenarioKey);
         if (scenario == null) {
             throw new FrameworkException('Scenario was not found. Scenario: ' + command.scenarioKey);
@@ -25,6 +29,9 @@ public inherited sharing class ApplicationStateStore {
         application.External_Reference__c = command.externalReference;
         application.Definition_Version__c = definition.version;
         application.Started_At__c = System.now();
+        if (ownerId != null) {
+            application.OwnerId = ownerId;
+        }
         insert application;
 
         return createResult(application, true);

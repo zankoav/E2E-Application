@@ -224,6 +224,7 @@ Consumer access is configured in `Consumer_Definition__mdt`:
 - `Allowed_Process_Keys__c` controls runnable process keys.
 - `Allowed_Scenario_Keys__c` controls runnable `processKey:scenarioKey` pairs.
 - `Allowed_Origins__c` optionally restricts browser `Origin` values. Empty means no framework-level origin restriction. Salesforce CORS/Trusted URLs still belong to Salesforce Setup.
+- `Application_Owner_Username__c` identifies the active non-Guest user that owns Applications created through public init.
 
 Application public access is configured per scenario in `Process_Definition__mdt.Definition_JSON__c`:
 

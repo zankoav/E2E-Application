@@ -10,7 +10,7 @@ public inherited sharing class ConsumerAccessService {
         this.resolver = resolver == null ? new ConsumerDefinitionResolver() : resolver;
     }
 
-    public void validateInitAccess(
+    public ConsumerDefinition validateInitAccess(
         String consumerKey,
         String processKey,
         String scenarioKey,
@@ -31,6 +31,7 @@ public inherited sharing class ConsumerAccessService {
         if (!scenario.consumerKeys.isEmpty() && !scenario.consumerKeys.contains(consumerKey)) {
             throw new FrameworkException('Consumer is not allowed for Scenario. Consumer: ' + consumerKey + ', Scenario: ' + scenarioKey);
         }
+        return consumer;
     }
 
     public void validateApplicationAccess(String consumerKey, Application__c application) {

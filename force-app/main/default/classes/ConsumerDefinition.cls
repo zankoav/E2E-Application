@@ -1,6 +1,7 @@
 public class ConsumerDefinition {
     public String key;
     public Boolean active;
+    public String applicationOwnerUsername;
     public Set<String> allowedProcessKeys = new Set<String>();
     public Set<String> allowedScenarioKeys = new Set<String>();
     public Set<String> allowedOrigins = new Set<String>();

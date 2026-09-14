@@ -54,6 +54,10 @@ For public website requests, the technical permission is Apex REST class access.
 
 The Apex runtime executes framework DML in system context and does not expose direct object access to the Site Guest User.
 
+Public Applications are not owned by the Site Guest User.
+
+`Consumer_Definition__mdt.Application_Owner_Username__c` must reference an active non-Guest user that becomes the owner of Applications created through public init.
+
 The actual Application-level authorization is still enforced by the framework through:
 
 - Consumer Definition

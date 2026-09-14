@@ -20,16 +20,22 @@ public inherited sharing class InitApplicationHandler {
 
         ProcessDefinition definition = definitionResolver.resolveActive(command.processKey);
         ProcessDefinition.ScenarioDefinition scenario = definition.getScenario(command.scenarioKey);
-        consumerAccessService.validateInitAccess(command.consumerKey, command.processKey, command.scenarioKey, scenario);
+        ConsumerDefinition consumer = consumerAccessService.validateInitAccess(
+            command.consumerKey,
+            command.processKey,
+            command.scenarioKey,
+            scenario
+        );
         publicAccessService.requirePublicInitAllowed(scenario);
 
         Application__c application;
         Boolean created = false;
+        Id applicationOwnerId = publicAccessService.getPublicApplicationOwnerId(consumer);
         if (publicAccessService.isPublicAccessRequired()) {
             application = publicAccessService.findExistingApplication(command);
         }
         if (application == null) {
-            ApplicationStateStore.InitResult initResult = stateStore.initApplication(command, definition);
+            ApplicationStateStore.InitResult initResult = stateStore.initApplication(command, definition, applicationOwnerId);
             application = initResult.application;
             created = initResult.created;
         }

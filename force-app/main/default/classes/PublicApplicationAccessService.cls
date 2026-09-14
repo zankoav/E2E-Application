@@ -67,6 +67,30 @@ public without sharing class PublicApplicationAccessService {
         }
     }
 
+    public Id getPublicApplicationOwnerId(ConsumerDefinition consumer) {
+        if (!isPublicAccessRequired()) {
+            return null;
+        }
+        if (consumer == null || String.isBlank(consumer.applicationOwnerUsername)) {
+            throw new FrameworkException('Public Application owner username is required for Consumer.');
+        }
+
+        List<User> owners = [
+            SELECT Id, UserType
+            FROM User
+            WHERE Username = :consumer.applicationOwnerUsername
+            AND IsActive = true
+            LIMIT 1
+        ];
+        if (owners.isEmpty()) {
+            throw new FrameworkException('Public Application owner user was not found or is inactive. Username: ' + consumer.applicationOwnerUsername);
+        }
+        if (owners[0].UserType == 'Guest') {
+            throw new FrameworkException('Public Application owner cannot be a Guest User.');
+        }
+        return owners[0].Id;
+    }
+
     public AccessGrant issue(Application__c application, ProcessDefinition.ScenarioDefinition scenario) {
         if (!isPublicAccessEnabled(scenario)) {
             return null;

@@ -90,10 +90,15 @@ Set:
 - `Allowed_Process_Keys__c`
 - `Allowed_Scenario_Keys__c`
 - `Allowed_Origins__c` when browser origins should be restricted by the framework
+- `Application_Owner_Username__c` for public website flows
 
 Consumers are trusted API clients such as web portals, mobile apps, partner sites, or internal integrations.
 
 For public websites, also enable scenario `publicAccess` in the process definition and configure `idleTimeoutMinutes` and `maxLifetimeMinutes`.
+
+For public websites, `Application_Owner_Username__c` must point to an active non-Guest Salesforce user.
+
+New public Applications are owned by this user instead of the Site Guest User.
 
 ## Add Integrations
 

@@ -5,7 +5,8 @@ public inherited sharing class ConsumerDefinitionResolver {
         }
 
         List<Consumer_Definition__mdt> records = [
-            SELECT Consumer_Key__c, Active__c, Allowed_Process_Keys__c, Allowed_Scenario_Keys__c, Allowed_Origins__c
+            SELECT Consumer_Key__c, Active__c, Allowed_Process_Keys__c, Allowed_Scenario_Keys__c, Allowed_Origins__c,
+                Application_Owner_Username__c
             FROM Consumer_Definition__mdt
             WHERE Consumer_Key__c = :consumerKey
             AND Active__c = true
@@ -20,6 +21,7 @@ public inherited sharing class ConsumerDefinitionResolver {
         ConsumerDefinition definition = new ConsumerDefinition();
         definition.key = record.Consumer_Key__c;
         definition.active = record.Active__c;
+        definition.applicationOwnerUsername = record.Application_Owner_Username__c;
         definition.allowedProcessKeys = parseAllowedValues(record.Allowed_Process_Keys__c);
         definition.allowedScenarioKeys = parseAllowedValues(record.Allowed_Scenario_Keys__c);
         definition.allowedOrigins = parseAllowedValues(record.Allowed_Origins__c);
