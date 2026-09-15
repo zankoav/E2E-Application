@@ -426,41 +426,54 @@ private class ConvertApplicationsHandlerTest {
     }
 
     @IsTest
-    static void restControllerConvertsApplications() {
-        RestRequest request = new RestRequest();
-        request.requestUri = '/services/apexrest/e2e/applications/convert';
-        request.httpMethod = 'POST';
-        request.requestBody = Blob.valueOf('{"consumerKey":"webPortal","processKey":"fuelCardApplication"}');
-        RestContext.request = request;
-        RestContext.response = new RestResponse();
+    static void serviceConvertsOneApplication() {
+        Application__c application = createCompletedApplication('convert-service');
+        insert new List<Application_Data__c>{
+            createData(application.Id, 'company.name', 'Service Converted Account'),
+            createData(application.Id, 'company.registrationNumber', 'SVC-100'),
+            createData(application.Id, 'contact.firstName', 'Service'),
+            createData(application.Id, 'contact.lastName', 'Converted'),
+            createData(application.Id, 'contact.email', 'service.converted@example.com'),
+            createData(application.Id, 'contact.phone', '07000000001')
+        };
 
         Test.startTest();
-        ApplicationConvertRestController.post();
+        ConversionResult result = ApplicationConversionService.convertOne(application.Id);
         Test.stopTest();
 
-        Assert.areEqual(200, RestContext.response.statusCode);
-        Map<String, Object> responseBody = (Map<String, Object>) JSON.deserializeUntyped(RestContext.response.responseBody.toString());
-        Assert.areEqual(true, responseBody.get('success'));
-        Assert.isNotNull(responseBody.get('conversion'));
+        Assert.areEqual(1, result.convertedCount, String.join(result.errors, '; '));
+        Application__c convertedApplication = [
+            SELECT Conversion_Status__c
+            FROM Application__c
+            WHERE Id = :application.Id
+            LIMIT 1
+        ];
+        Assert.areEqual(FrameworkConstants.CONVERSION_STATUS_CONVERTED, convertedApplication.Conversion_Status__c);
     }
 
     @IsTest
-    static void restControllerReturnsErrorForInvalidCommand() {
-        RestRequest request = new RestRequest();
-        request.requestUri = '/services/apexrest/e2e/applications/convert';
-        request.httpMethod = 'POST';
-        request.requestBody = Blob.valueOf('{"consumerKey":"webPortal"}');
-        RestContext.request = request;
-        RestContext.response = new RestResponse();
+    static void batchConvertsReadyApplications() {
+        Application__c application = createCompletedApplication('convert-batch');
+        insert new List<Application_Data__c>{
+            createData(application.Id, 'company.name', 'Batch Converted Account'),
+            createData(application.Id, 'company.registrationNumber', 'BAT-100'),
+            createData(application.Id, 'contact.firstName', 'Batch'),
+            createData(application.Id, 'contact.lastName', 'Converted'),
+            createData(application.Id, 'contact.email', 'batch.converted@example.com'),
+            createData(application.Id, 'contact.phone', '07000000002')
+        };
 
         Test.startTest();
-        ApplicationConvertRestController.post();
+        ApplicationConversionService.startBatch('fuelCardApplication', 50);
         Test.stopTest();
 
-        Assert.areEqual(400, RestContext.response.statusCode);
-        Map<String, Object> responseBody = (Map<String, Object>) JSON.deserializeUntyped(RestContext.response.responseBody.toString());
-        Assert.areEqual(false, responseBody.get('success'));
-        Assert.isNotNull(responseBody.get('errors'));
+        Application__c convertedApplication = [
+            SELECT Conversion_Status__c
+            FROM Application__c
+            WHERE Id = :application.Id
+            LIMIT 1
+        ];
+        Assert.areEqual(FrameworkConstants.CONVERSION_STATUS_CONVERTED, convertedApplication.Conversion_Status__c);
     }
 
     private static ConvertApplicationsHandler createHandler() {

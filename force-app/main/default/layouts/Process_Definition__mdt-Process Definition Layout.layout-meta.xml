@@ -38,6 +38,10 @@
             </layoutItems>
             <layoutItems>
                 <behavior>Edit</behavior>
+                <field>Conversion_Check_Interval_Seconds__c</field>
+            </layoutItems>
+            <layoutItems>
+                <behavior>Edit</behavior>
                 <field>IsProtected</field>
             </layoutItems>
             <layoutItems>

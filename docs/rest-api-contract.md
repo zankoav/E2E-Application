@@ -72,7 +72,6 @@ Common setup errors:
 | `RunJob` | `POST` | `/applications/run-job` | `snapshot` |
 | `RestartJob` | `POST` | `/applications/restart-job` | `snapshot` |
 | `GetJobStatus` | `POST` | `/applications/job-status` | `job` |
-| `ConvertApplications` | `POST` | `/applications/convert` | `conversion` |
 
 ## Response Envelope
 
@@ -372,28 +371,6 @@ Reference data integrations should not perform DML.
 ```
 
 Use this endpoint for lightweight polling when a full Snapshot is not needed.
-
-## Conversion Contract
-
-`ConvertApplications` returns:
-
-```json
-{
-  "success": true,
-  "conversion": {
-    "requestedCount": 2,
-    "convertedCount": 1,
-    "failedCount": 1,
-    "convertedApplicationIds": ["a00000000000001AAA"],
-    "failedApplicationIds": ["a00000000000002AAA"],
-    "errors": ["account: Required fields are missing: [Name]"]
-  }
-}
-```
-
-Partial conversion failure is represented in the payload.
-
-The command itself can still return `success = true` when the conversion run completed and reported per-Application results.
 
 ## Controller Responsibility
 

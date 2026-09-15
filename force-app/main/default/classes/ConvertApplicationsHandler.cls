@@ -31,9 +31,17 @@ public inherited sharing class ConvertApplicationsHandler {
     }
 
     public CommandResult execute(ConvertApplicationsCommand command) {
-        validateCommand(command);
+        validateCommand(command, true);
         consumerAccessService.validateProcessAccess(command.consumerKey, command.processKey);
+        return executeConversion(command);
+    }
 
+    public CommandResult executeSystem(ConvertApplicationsCommand command) {
+        validateCommand(command, false);
+        return executeConversion(command);
+    }
+
+    private CommandResult executeConversion(ConvertApplicationsCommand command) {
         ProcessDefinition definition = definitionResolver.resolveActive(command.processKey);
         List<Application__c> applications = stateStore.getApplicationsForConversion(command);
         ConversionResult result = new ConversionResult();
@@ -399,11 +407,11 @@ public inherited sharing class ConvertApplicationsHandler {
         }
     }
 
-    private void validateCommand(ConvertApplicationsCommand command) {
+    private void validateCommand(ConvertApplicationsCommand command, Boolean requireConsumerKey) {
         if (command == null) {
             throw new FrameworkException('ConvertApplications command is required.');
         }
-        if (String.isBlank(command.consumerKey)) {
+        if (requireConsumerKey && String.isBlank(command.consumerKey)) {
             throw new FrameworkException('Consumer key is required.');
         }
         if (String.isBlank(command.processKey)) {

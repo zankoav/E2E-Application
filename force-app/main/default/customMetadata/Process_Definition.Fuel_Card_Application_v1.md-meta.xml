@@ -13,8 +13,12 @@
         <value xsi:type="xsd:string">Minimal sample process definition for the first InitApplication skeleton.</value>
     </values>
     <values>
+        <field>Conversion_Check_Interval_Seconds__c</field>
+        <value xsi:type="xsd:double">300</value>
+    </values>
+    <values>
         <field>Definition_JSON__c</field>
-        <value xsi:type="xsd:string">{"process":{"key":"fuelCardApplication","label":"Fuel Card Application","version":"1.0.0"},"scenarios":{"newCustomer":{"label":"New Customer","initialStep":"contactDetails","steps":["contactDetails","companyDetails","finish"],"publicAccess":{"enabled":true,"idleTimeoutMinutes":60,"maxLifetimeMinutes":10080}}},"steps":{"contactDetails":{"label":"Contact Details","type":"standard","required":true},"companyDetails":{"label":"Company Details","type":"standard","required":true},"finish":{"label":"Finish","type":"finish","required":true}},"rules":{},"jobs":{"emailValidation":{"label":"Email Validation","executionMode":"sync","canBeRestarted":true}},"integrations":{},"mappings":{},"stopProcesses":{}}</value>
+        <value xsi:type="xsd:string">{"process":{"key":"fuelCardApplication","label":"Fuel Card Application","version":"1.0.0"},"scenarios":{"newCustomer":{"label":"New Customer","initialStep":"contactDetails","steps":["contactDetails","companyDetails","finish"],"publicAccess":{"enabled":true,"idleTimeoutMinutes":60,"maxLifetimeMinutes":10080}}},"steps":{"contactDetails":{"label":"Contact Details","type":"standard","required":true},"companyDetails":{"label":"Company Details","type":"standard","required":true},"finish":{"label":"Finish","type":"finish","required":true}},"rules":{},"jobs":{"emailValidation":{"label":"Email Validation","executionMode":"sync","canBeRestarted":true}},"integrations":{},"mappings":{"account":{"role":"PrimaryAccount","targetObject":"Account","operation":"insert","fields":[{"target":"Name","source":"company.name"},{"target":"AccountNumber","source":"company.registrationNumber"},{"target":"Phone","source":"contact.phone"}]},"contact":{"role":"PrimaryContact","targetObject":"Contact","operation":"insert","dependsOn":["account"],"fields":[{"target":"FirstName","source":"contact.firstName"},{"target":"LastName","source":"contact.lastName"},{"target":"Email","source":"contact.email"},{"target":"Phone","source":"contact.phone"},{"target":"AccountId","fromRecord":"account"}]}},"stopProcesses":{}}</value>
     </values>
     <values>
         <field>Process_Key__c</field>

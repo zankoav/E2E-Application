@@ -34,9 +34,9 @@ Step availability is backend truth. Snapshot can mark steps as `Current`, `Compl
 
 ## Command
 
-An action requested through the API.
+An action requested through the API or backend service boundary.
 
-Examples: init application, submit step, run job, restart job, continue application, get job status, convert application.
+Examples: init application, submit step, run job, restart job, continue application, get job status.
 
 ## State
 

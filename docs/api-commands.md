@@ -175,22 +175,17 @@ Responsibilities:
 - update conversion status
 - return conversion result
 
-Initial REST endpoint:
+Conversion is not a consumer REST endpoint.
 
-```text
-POST /services/apexrest/e2e/applications/convert
-```
+It is a backend operation exposed through Apex service methods, Batch Apex, and Scheduled Apex.
 
-Initial request shape:
+Developer-facing entrypoints:
 
-```json
-{
-  "consumerKey": "webPortal",
-  "processKey": "fuelCardApplication",
-  "applicationIds": ["a00000000000001AAA"],
-  "maxBatchSize": 50,
-  "retryFailed": false
-}
+```apex
+fleetcor_ete.ApplicationConversionService.convertOne(applicationId);
+fleetcor_ete.ApplicationConversionService.convertReady('fuelCardApplication', 50);
+fleetcor_ete.ApplicationConversionService.startBatch('fuelCardApplication', 50);
+fleetcor_ete.ApplicationConversionScheduler.scheduleProcess('fuelCardApplication');
 ```
 
 `applicationIds` is optional. Without it, the command converts ready Applications for the requested process up to `maxBatchSize`.
@@ -207,7 +202,9 @@ Conversion is idempotent through `Application_Record_Link__c`.
 
 If a retry finds an existing link for the same Application and Mapping key, it updates the linked CRM record instead of creating a duplicate.
 
-Conversion is usually system/admin driven, not a normal frontend action.
+Conversion is system/admin driven, not a normal frontend action.
+
+`Process_Definition__mdt.Conversion_Check_Interval_Seconds__c` controls how often the scheduler should try to start conversion for that process.
 
 ## Guiding Principle
 
